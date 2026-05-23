@@ -94,7 +94,7 @@ class SessionManager:
         Returns:
             Claude响应文本
         """
-        from .claude import claude_service
+        from .llm_router import get_llm_service
 
         config = AGENT_CONFIGS.get(agent_id)
         if not config:
@@ -104,7 +104,8 @@ class SessionManager:
         session_id = f"session_{agent_id}"
 
         try:
-            response = claude_service.send_message(
+            llm = get_llm_service()
+            response = llm.send_message(
                 session_id=session_id,
                 message=message,
                 system_prompt=system_prompt
