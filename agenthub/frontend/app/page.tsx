@@ -68,7 +68,7 @@ export default function Home() {
         <AgentList agents={agents} />
         <div className="flex-1 flex flex-col">
           <MessageList messages={messages} />
-          <MessageInput onSend={handleSend} disabled={loading} />
+          <MessageInput onSend={handleSend} disabled={loading} agents={agents} />
         </div>
       </div>
     </div>
