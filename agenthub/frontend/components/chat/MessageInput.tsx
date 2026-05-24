@@ -14,6 +14,7 @@ interface MentionState {
   isActive: boolean;
   filterText: string;
   startIndex: number;
+  cursorPos: number;
 }
 
 export function MessageInput({ onSend, disabled, agents = [] }: MessageInputProps) {
@@ -22,13 +23,14 @@ export function MessageInput({ onSend, disabled, agents = [] }: MessageInputProp
     isActive: false,
     filterText: '',
     startIndex: -1,
+    cursorPos: 0,
   });
   const inputRef = useRef<HTMLInputElement>(null);
 
   const filteredAgents = mentionState.isActive
     ? agents.filter((agent) =>
-        agent.name.includes(mentionState.filterText) ||
-        agent.role.includes(mentionState.filterText)
+        agent.name.toLowerCase().includes(mentionState.filterText.toLowerCase()) ||
+        agent.role.toLowerCase().includes(mentionState.filterText.toLowerCase())
       )
     : [];
 
@@ -44,11 +46,12 @@ export function MessageInput({ onSend, disabled, agents = [] }: MessageInputProp
     if (lastAtIndex !== -1) {
       const textAfterAt = textBeforeCursor.slice(lastAtIndex + 1);
       if (!textAfterAt.includes(' ')) {
-        setMentionState({
+        setMentionState((prev) => ({
           isActive: true,
           filterText: textAfterAt,
           startIndex: lastAtIndex,
-        });
+          cursorPos: cursorPos,
+        }));
         return;
       }
     }
@@ -57,6 +60,7 @@ export function MessageInput({ onSend, disabled, agents = [] }: MessageInputProp
       isActive: false,
       filterText: '',
       startIndex: -1,
+      cursorPos: 0,
     });
   };
 
@@ -64,7 +68,7 @@ export function MessageInput({ onSend, disabled, agents = [] }: MessageInputProp
     if (mentionState.startIndex === -1) return;
 
     const beforeMention = input.slice(0, mentionState.startIndex);
-    const afterMention = input.slice(inputRef.current?.selectionStart ?? mentionState.startIndex);
+    const afterMention = input.slice(mentionState.cursorPos);
     const mentionInsert = `@${agent.name} `;
 
     setInput(beforeMention + mentionInsert + afterMention);
@@ -72,6 +76,7 @@ export function MessageInput({ onSend, disabled, agents = [] }: MessageInputProp
       isActive: false,
       filterText: '',
       startIndex: -1,
+      cursorPos: 0,
     });
 
     setTimeout(() => {
@@ -87,6 +92,7 @@ export function MessageInput({ onSend, disabled, agents = [] }: MessageInputProp
         isActive: false,
         filterText: '',
         startIndex: -1,
+        cursorPos: 0,
       });
       e.preventDefault();
     }
@@ -101,6 +107,7 @@ export function MessageInput({ onSend, disabled, agents = [] }: MessageInputProp
             isActive: false,
             filterText: '',
             startIndex: -1,
+            cursorPos: 0,
           });
         }
       }
