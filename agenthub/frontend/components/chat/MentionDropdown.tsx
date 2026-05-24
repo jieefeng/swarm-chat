@@ -5,7 +5,6 @@ import { Agent } from '@/lib/types';
 interface MentionDropdownProps {
   options: Agent[];
   onSelect: (agent: Agent) => void;
-  position?: { top: number; left: number };
 }
 
 export function MentionDropdown({ options, onSelect }: MentionDropdownProps) {
@@ -18,7 +17,7 @@ export function MentionDropdown({ options, onSelect }: MentionDropdownProps) {
   }
 
   return (
-    <div className="absolute bottom-full mb-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+    <div className="absolute bottom-full mb-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden z-50">
       {options.slice(0, 5).map((agent) => (
         <button
           key={agent.id}
