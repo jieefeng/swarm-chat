@@ -5,7 +5,7 @@ import { AgentList } from '@/components/agents/AgentList'
 import { MessageInput } from '@/components/chat/MessageInput'
 import { MessageList } from '@/components/chat/MessageList'
 import { useAgentStore } from '@/lib/stores/agentStore'
-import type { Message, MentionCandidate } from '@/lib/types'
+import type { MentionCandidate, Message } from '@/lib/types'
 
 export default function HomePage() {
   const agents = useAgentStore((s) => s.agents)

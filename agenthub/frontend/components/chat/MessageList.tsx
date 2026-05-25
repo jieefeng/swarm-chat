@@ -18,7 +18,7 @@ export function MessageList({ messages, scrollRef }: MessageListProps) {
     if (ref.current) {
       ref.current.scrollTop = ref.current.scrollHeight
     }
-  }, [messages, ref])
+  }, [ref])
 
   return (
     <div ref={ref} className="flex-1 overflow-y-auto p-4 bg-gray-50">
