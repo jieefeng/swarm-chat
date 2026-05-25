@@ -5,11 +5,15 @@ import { AgentList } from '@/components/agents/AgentList'
 import { MessageInput } from '@/components/chat/MessageInput'
 import { MessageList } from '@/components/chat/MessageList'
 import { useAgentStore } from '@/lib/stores/agentStore'
-import type { Message } from '@/lib/types'
+import type { Message, MentionCandidate } from '@/lib/types'
 
 export default function HomePage() {
   const agents = useAgentStore((s) => s.agents)
   const [messages, _setMessages] = useState<Message[]>([])
+  const mentionCandidates: MentionCandidate[] = agents.map((a) => ({
+    id: a.id,
+    label: a.name,
+  }))
 
   return (
     <div className="flex flex-col h-screen">
@@ -27,7 +31,7 @@ export default function HomePage() {
           <MessageInput
             onSubmit={(content) => console.log('submit:', content)}
             disabled={false}
-            mentionCandidates={agents}
+            mentionCandidates={mentionCandidates}
           />
         </div>
       </div>
