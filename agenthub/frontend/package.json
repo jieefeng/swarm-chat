@@ -1,25 +1,32 @@
 {
-  "name": "agenthub-frontend",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
-  },
-  "dependencies": {
-    "next": "14.2.3",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-markdown": "^9.0.1"
-  },
-  "devDependencies": {
-    "@types/node": "^20.12.7",
-    "@types/react": "^18.3.1",
-    "@types/react-dom": "^18.3.0",
-    "autoprefixer": "^10.4.19",
-    "postcss": "^8.4.38",
-    "tailwindcss": "^3.4.3",
-    "typescript": "^5.4.5"
-  }
+	"name": "agenthub-frontend",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "next dev -p 7000",
+		"build": "next build",
+		"start": "next start",
+		"check": "biome check --write . && tsc --noEmit"
+	},
+	"dependencies": {
+		"next": "^15.0.0",
+		"react": "^19.0.0",
+		"react-dom": "^19.0.0",
+		"react-markdown": "^9.0.1",
+		"tailwindcss": "^4.1.0",
+		"zod": "^3.23.0"
+	},
+	"devDependencies": {
+		"@tailwindcss/postcss": "^4.1.0",
+		"@biomejs/biome": "^2.0.0",
+		"@hookform/resolvers": "^3.9.0",
+		"react-hook-form": "^7.53.0",
+		"@types/node": "^22.0.0",
+		"@types/react": "^19.0.0",
+		"@types/react-dom": "^19.0.0",
+		"typescript": "^5.5.0",
+		"vitest": "^2.0.0",
+		"@testing-library/react": "^16.0.0"
+	}
 }
