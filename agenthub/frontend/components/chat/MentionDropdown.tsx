@@ -1,33 +1,48 @@
 'use client'
 
-import type { Agent } from '@/lib/types'
+import type { MentionCandidate } from '@/lib/types'
 
 interface MentionDropdownProps {
-  options: Agent[]
-  onSelect: (agent: Agent) => void
+  candidates: MentionCandidate[]
+  query: string
+  onSelect: (candidate: MentionCandidate) => void
+  onClose: () => void
+  anchorRect: DOMRect | null
 }
 
-export function MentionDropdown({ options, onSelect }: MentionDropdownProps) {
-  if (options.length === 0) {
-    return (
-      <div className="absolute bottom-full mb-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 p-4 text-center text-gray-500 text-sm">
-        无匹配Agent
-      </div>
-    )
+export function MentionDropdown({
+  candidates,
+  onSelect,
+  onClose,
+}: MentionDropdownProps) {
+  if (candidates.length === 0) {
+    return null
   }
 
   return (
-    <div className="absolute bottom-full mb-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden z-50">
-      {options.slice(0, 5).map((agent) => (
+    <div
+      role="listbox"
+      aria-label="选择 Agent"
+      className="bg-white rounded-lg shadow-lg border border-gray-200 py-1"
+    >
+      {candidates.map((candidate) => (
         <button
-          key={agent.id}
-          onClick={() => onSelect(agent)}
-          className="w-full px-4 py-3 text-left hover:bg-blue-50 flex items-center gap-3 transition-colors"
+          key={candidate.id}
+          role="option"
+          aria-selected={false}
+          onClick={() => onSelect(candidate)}
+          className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
         >
-          <div className="flex-1">
-            <div className="font-medium text-gray-800">{agent.name}</div>
-            <div className="text-xs text-gray-500">{agent.role}</div>
-          </div>
+          {candidate.avatar && (
+            <img
+              src={candidate.avatar}
+              alt=""
+              className="w-6 h-6 rounded-full"
+            />
+          )}
+          <span className="text-sm font-medium text-gray-800">
+            {candidate.label}
+          </span>
         </button>
       ))}
     </div>
