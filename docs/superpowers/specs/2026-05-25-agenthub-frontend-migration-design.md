@@ -482,5 +482,146 @@ console.log('debug'); // 禁止！
 
 ---
 
+## 8. 组件详细设计
+
+### 8.1 组件 Props Interface 定义
+
+所有 Props 使用 TypeScript interface，不使用 Zod 运行时校验（组件层信任内部调用方，Zod 仅用于 API/SSE 入站边界）。
+
+```typescript
+// components/chat/MessageList.tsx
+'use client';
+
+interface MessageListProps {
+  /** 当前 agent ID，用于空状态提示 */
+  agentId: string | null;
+  /** 滚动容器 ref，由父组件传入以控制自动滚动 */
+  scrollRef?: React.RefObject<HTMLDivElement>;
+}
+```
+
+```typescript
+// components/chat/MessageBubble.tsx
+'use client';
+
+import type { Message } from '@/lib/types';
+
+interface MessageBubbleProps {
+  message: Message;
+  /** 是否为流式消息（显示光标动画） */
+  isStreaming: boolean;
+  /** 复制成功回调（可选，用于 toast） */
+  onCopySuccess?: () => void;
+}
+```
+
+```typescript
+// components/chat/MessageInput.tsx
+'use client';
+
+interface MessageInputProps {
+  /** 提交消息回调，content 已经过 Zod 校验 */
+  onSubmit: (content: string) => void;
+  /** 是否正在流式接收（禁用发送按钮） */
+  disabled: boolean;
+  /** @mention 候选列表 */
+  mentionCandidates: MentionCandidate[];
+}
+
+interface MentionCandidate {
+  id: string;
+  label: string;
+  avatar?: string;
+}
+```
+
+```typescript
+// components/chat/MentionDropdown.tsx
+'use client';
+
+interface MentionCandidate {
+  id: string;
+  label: string;
+  avatar?: string;
+}
+
+interface MentionDropdownProps {
+  candidates: MentionCandidate[];
+  /** 当前搜索关键词（@ 后输入的内容） */
+  query: string;
+  /** 选中回调 */
+  onSelect: (candidate: MentionCandidate) => void;
+  /** 关闭回调（ESC / 点击外部） */
+  onClose: () => void;
+  /** 下拉菜单锚点位置 */
+  anchorRect: DOMRect | null;
+}
+```
+
+### 8.2 useChatStream Hook 完整签名
+
+这是 SSE 传输层与 Store 的唯一编排点，严格遵循"跨 Store 通信仅在 Hook 层"规则。
+
+```typescript
+// lib/hooks/useChatStream.ts
+'use client';
+
+interface UseChatStreamOptions {
+  agentId: string | null;
+  /** SSE 连接基础 URL */
+  baseUrl: string;
+}
+
+interface UseChatStreamReturn {
+  /** 发送消息并启动 SSE 监听 */
+  sendMessage: (content: string) => Promise<void>;
+  /** 手动断开 SSE 连接 */
+  disconnect: () => void;
+  /** 当前连接状态 */
+  connectionState: 'idle' | 'connecting' | 'connected' | 'reconnecting' | 'error';
+  /** 最近一次错误（用于 UI 展示） */
+  lastError: string | null;
+}
+
+export function useChatStream(options: UseChatStreamOptions): UseChatStreamReturn;
+```
+
+**关键实现约束：**
+
+- `sendMessage` 内部调用 `messageStore.addMessage()` 添加用户消息 → 调用 `sse.ts` 建立连接 → 监听事件时调用 `messageStore.appendStreamChunk()` / `setStreaming()`
+- `connectionState` 是 Hook 内部派生状态，不存入任何 Store（纯 UI 瞬态）
+- 组件卸载时自动调用 `disconnect()`（useEffect cleanup）
+- `agentId` 为 null 时 `sendMessage` 应 no-op 并设置 `lastError`
+
+### 8.3 MentionDropdown 无障碍设计
+
+| 特性 | 实现方式 |
+|------|----------|
+| 键盘导航 | ↑/↓ 移动高亮项，Enter 选择，ESC 关闭 |
+| 焦点管理 | 打开时焦点移入列表，关闭时焦点返回输入框 |
+| ARIA 角色 | 容器 `role="listbox"`，选项 `role="option"`，`aria-selected` 标记高亮项 |
+| 屏幕阅读器 | `aria-live="polite"` 播报候选数量变化 |
+| 点击外部关闭 | `onPointerDown` + `AbortController` 清理（避免内存泄漏） |
+| 位置计算 | 基于 `anchorRect` 绝对定位，超出视口时向上翻转 |
+
+**禁止模式：**
+- 不使用 `<details>` 元素（Safari 兼容性问题）
+- 不使用第三方 dropdown 库（减少依赖）
+
+### 8.4 组件测试策略
+
+| 组件 | 测试类型 | 优先级 | 理由 |
+|------|----------|--------|------|
+| `useChatStream` | 单元测试 (Vitest) | 🔴 高 | 核心编排逻辑，mock sse.ts + store 验证调用序列 |
+| `MessageInput` + RHF | 集成测试 | 🔴 高 | 验证 Zod 校验触发、提交回调、disabled 状态联动 |
+| `MentionDropdown` | 交互测试 | 🟡 中 | 键盘导航 + ARIA 属性验证（@testing-library/react） |
+| `MessageBubble` | 快照测试 | 🟢 低 | 纯展示，react-markdown 渲染结果稳定即可 |
+| `MessageList` | 不测 | ⚪ 无 | 仅是 map + scroll 容器，逻辑在 hook 和子组件中 |
+| `AgentList` | 不测 | ⚪ 无 | 静态列表渲染，Phase 1 手动验证足够 |
+
+**测试文件命名约定：** `*.test.ts`（hook）/ `*.test.tsx`（组件），与源文件同目录。
+
+---
+
 **Author:** Claude Code
 **Last Updated:** 2026-05-25
