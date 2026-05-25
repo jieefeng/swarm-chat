@@ -1,6 +1,7 @@
 "use client";
 
 import ReactMarkdown from "react-markdown";
+import rehypeSanitize from "rehype-sanitize";
 import type { Message } from "@/lib/types";
 
 interface MessageBubbleProps {
@@ -27,7 +28,9 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
           </div>
         )}
         <div className="prose prose-sm max-w-none">
-          <ReactMarkdown>{message.content}</ReactMarkdown>
+          <ReactMarkdown rehypePlugins={[rehypeSanitize]}>
+            {message.content}
+          </ReactMarkdown>
         </div>
         {isStreaming && (
           <span className="inline-block w-2 h-4 bg-current ml-1 animate-pulse" />

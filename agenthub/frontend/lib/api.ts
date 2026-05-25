@@ -1,7 +1,7 @@
 import type { Agent, Message, SendMessageResponse } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:7005";
-const API_KEY = "dev-secret-key";
+const API_KEY = process.env.NEXT_PUBLIC_API_KEY || "";
 
 const headers = {
   "Content-Type": "application/json",
@@ -19,6 +19,10 @@ export const api = {
         sender_name: "用户",
       }),
     });
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP ${res.status}`);
+    }
     return res.json();
   },
 

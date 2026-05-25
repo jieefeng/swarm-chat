@@ -37,7 +37,6 @@ export function useChatStream(
 
   const addMessage = useMessageStore((s) => s.addMessage);
   const setStreaming = useMessageStore((s) => s.setStreaming);
-  const messages = useMessageStore((s) => s.messages);
 
   const disconnect = useCallback(() => {
     if (connectionRef.current) {
@@ -89,13 +88,17 @@ export function useChatStream(
           onMessage: (data) => {
             if (data.id && data.content) {
               // 检查是否有待替换的 temp 消息
-              const existingIndex = messages.findIndex(
+              const currentMessages = useMessageStore.getState().messages;
+              const existingIndex = currentMessages.findIndex(
                 (m) => m.id.startsWith("temp-") && m.content === content,
               );
               if (existingIndex >= 0) {
                 // 替换 temp 消息
-                useMessageStore.getState().messages[existingIndex] =
-                  data as Message;
+                useMessageStore.setState((s) => ({
+                  messages: s.messages.map((m, i) =>
+                    i === existingIndex ? (data as Message) : m,
+                  ),
+                }));
               } else {
                 addMessage(data as Message);
               }
@@ -116,7 +119,7 @@ export function useChatStream(
         setStreaming(false);
       }
     },
-    [agentId, baseUrl, addMessage, setStreaming, disconnect, messages],
+    [agentId, baseUrl, addMessage, setStreaming, disconnect],
   );
 
   // 组件卸载时断开连接

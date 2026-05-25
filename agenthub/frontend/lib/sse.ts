@@ -26,16 +26,19 @@ export function createSSEConnection(options: SSEConnectionOptions) {
   let aborted = false;
   let retryDelay = BASE_DELAY;
   let retryCount = 0;
+  const abortController = new AbortController();
 
-  const API_KEY = "dev-secret-key";
+  const API_KEY = process.env.NEXT_PUBLIC_API_KEY || "";
 
   const connect = async () => {
+    if (aborted) return;
     try {
       const response = await fetch(`${options.baseUrl}/api/events`, {
         headers: {
           "Content-Type": "application/json",
           "X-API-Key": API_KEY,
         },
+        signal: abortController.signal,
         cache: "no-store",
         credentials: "include",
       });
@@ -96,11 +99,18 @@ export function createSSEConnection(options: SSEConnectionOptions) {
     }
   };
 
-  connect();
+  connect().catch((err) => {
+    if (!aborted) {
+      options.onError(
+        `连接错误: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  });
 
   return {
     close: () => {
       aborted = true;
+      abortController.abort();
     },
   };
 }
