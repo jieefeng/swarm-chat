@@ -1,19 +1,21 @@
-import type { Metadata } from 'next'
-import './globals.css'
+import type { Metadata } from 'next';
+import './globals.css';
 
 export const metadata: Metadata = {
   title: 'AgentHub',
-  description: '多Agent协作平台',
-}
+  description: '多Agent协作聊天平台',
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html lang="zh-CN">
-      <body>{children}</body>
+      <body className="font-sans antialiased">
+        {children}
+      </body>
     </html>
-  )
+  );
 }
