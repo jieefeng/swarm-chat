@@ -1,26 +1,57 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect } from 'react'
 import { AgentList } from '@/components/agents/AgentList'
 import { MessageInput } from '@/components/chat/MessageInput'
 import { MessageList } from '@/components/chat/MessageList'
+import { api } from '@/lib/api'
+import { useChatStream } from '@/lib/hooks/useChatStream'
 import { useAgentStore } from '@/lib/stores/agentStore'
-import type { MentionCandidate, Message } from '@/lib/types'
+import { useMessageStore } from '@/lib/stores/messageStore'
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:7005'
 
 export default function HomePage() {
   const agents = useAgentStore((s) => s.agents)
-  const [messages, _setMessages] = useState<Message[]>([])
-  const mentionCandidates: MentionCandidate[] = agents.map((a) => ({
-    id: a.id,
-    label: a.name,
-  }))
+  const setAgents = useAgentStore((s) => s.setAgents)
+  const messages = useMessageStore((s) => s.messages)
+  const { sendMessage, connectionState, lastError } = useChatStream({
+    agentId: null,
+    baseUrl: API_BASE,
+  })
+
+  useEffect(() => {
+    // 加载初始数据
+    const loadData = async () => {
+      try {
+        const [msgsRes, agentsRes] = await Promise.all([
+          api.getMessages(),
+          api.getAgents(),
+        ])
+        useMessageStore.getState().reset()
+        msgsRes.messages?.forEach((m) => {
+          useMessageStore.getState().addMessage(m)
+        })
+        setAgents(agentsRes.agents || [])
+      } catch (err) {
+        console.error('Failed to load data:', err)
+      }
+    }
+    loadData()
+  }, [setAgents])
 
   return (
     <div className="flex flex-col h-screen">
       {/* Header */}
       <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 bg-white">
         <h1 className="text-xl font-semibold">AgentHub</h1>
-        <div className="text-sm text-gray-500">多Agent协作平台</div>
+        <div className="text-sm text-gray-500">
+          {connectionState === 'connected'
+            ? '🟢 已连接'
+            : connectionState === 'connecting'
+              ? '🟡 连接中...'
+              : '⚪ 空闲'}
+        </div>
       </div>
 
       {/* Main Content */}
@@ -29,12 +60,18 @@ export default function HomePage() {
         <div className="flex-1 flex flex-col">
           <MessageList messages={messages} agentId={null} />
           <MessageInput
-            onSubmit={(content) => console.log('submit:', content)}
-            disabled={false}
-            mentionCandidates={mentionCandidates}
+            onSubmit={sendMessage}
+            disabled={connectionState === 'connecting'}
+            mentionCandidates={agents.map((a) => ({ id: a.id, label: a.name }))}
           />
         </div>
       </div>
+
+      {lastError && (
+        <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg">
+          {lastError}
+        </div>
+      )}
     </div>
   )
 }
