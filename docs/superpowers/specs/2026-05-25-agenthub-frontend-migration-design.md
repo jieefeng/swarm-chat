@@ -496,7 +496,7 @@ interface MessageListProps {
   /** 当前 agent ID，用于空状态提示 */
   agentId: string | null;
   /** 滚动容器 ref，由父组件传入以控制自动滚动 */
-  scrollRef?: React.RefObject<HTMLDivElement>;
+  scrollRef?: React.RefObject<HTMLDivElement> | null;
 }
 ```
 
@@ -516,8 +516,19 @@ interface MessageBubbleProps {
 ```
 
 ```typescript
+// lib/types.ts
+export interface MentionCandidate {
+  id: string;
+  label: string;
+  avatar?: string;
+}
+```
+
+```typescript
 // components/chat/MessageInput.tsx
 'use client';
+
+import type { MentionCandidate } from '@/lib/types';
 
 interface MessageInputProps {
   /** 提交消息回调，content 已经过 Zod 校验 */
@@ -527,23 +538,13 @@ interface MessageInputProps {
   /** @mention 候选列表 */
   mentionCandidates: MentionCandidate[];
 }
-
-interface MentionCandidate {
-  id: string;
-  label: string;
-  avatar?: string;
-}
 ```
 
 ```typescript
 // components/chat/MentionDropdown.tsx
 'use client';
 
-interface MentionCandidate {
-  id: string;
-  label: string;
-  avatar?: string;
-}
+import type { MentionCandidate } from '@/lib/types';
 
 interface MentionDropdownProps {
   candidates: MentionCandidate[];
