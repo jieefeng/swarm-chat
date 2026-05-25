@@ -1,22 +1,19 @@
-'use client'
+"use client";
 
-import type { MentionCandidate } from '@/lib/types'
+import Image from "next/image";
+import type { MentionCandidate } from "@/lib/types";
 
 interface MentionDropdownProps {
-  candidates: MentionCandidate[]
-  query: string
-  onSelect: (candidate: MentionCandidate) => void
-  onClose: () => void
-  anchorRect: DOMRect | null
+  candidates: MentionCandidate[];
+  onSelect: (candidate: MentionCandidate) => void;
 }
 
 export function MentionDropdown({
   candidates,
   onSelect,
-  onClose,
 }: MentionDropdownProps) {
   if (candidates.length === 0) {
-    return null
+    return null;
   }
 
   return (
@@ -27,6 +24,7 @@ export function MentionDropdown({
     >
       {candidates.map((candidate) => (
         <button
+          type="button"
           key={candidate.id}
           role="option"
           aria-selected={false}
@@ -34,9 +32,11 @@ export function MentionDropdown({
           className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
         >
           {candidate.avatar && (
-            <img
+            <Image
               src={candidate.avatar}
               alt=""
+              width={24}
+              height={24}
               className="w-6 h-6 rounded-full"
             />
           )}
@@ -46,5 +46,5 @@ export function MentionDropdown({
         </button>
       ))}
     </div>
-  )
+  );
 }

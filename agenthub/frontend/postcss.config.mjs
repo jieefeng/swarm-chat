@@ -3,6 +3,6 @@
 // Do NOT use CommonJS (module.exports) or array format
 export default {
   plugins: {
-    '@tailwindcss/postcss': {},
+    "@tailwindcss/postcss": {},
   },
-}
+};

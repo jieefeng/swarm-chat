@@ -1,10 +1,10 @@
-import { create } from 'zustand'
+import { create } from "zustand";
 
 interface UIState {
-  sidebarOpen: boolean
-  activeAgentId: string | null
-  toggleSidebar: () => void
-  setActiveAgent: (id: string | null) => void
+  sidebarOpen: boolean;
+  activeAgentId: string | null;
+  toggleSidebar: () => void;
+  setActiveAgent: (id: string | null) => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -12,4 +12,4 @@ export const useUIStore = create<UIState>((set) => ({
   activeAgentId: null,
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
   setActiveAgent: (id) => set({ activeAgentId: id }),
-}))
+}));

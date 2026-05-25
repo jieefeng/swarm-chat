@@ -1,24 +1,24 @@
-'use client'
+"use client";
 
-import { useEffect, useRef } from 'react'
-import type { Message } from '@/lib/types'
-import { MessageBubble } from './MessageBubble'
+import { useEffect, useRef } from "react";
+import type { Message } from "@/lib/types";
+import { MessageBubble } from "./MessageBubble";
 
 interface MessageListProps {
-  messages: Message[]
-  agentId: string | null
-  scrollRef?: React.RefObject<HTMLDivElement> | null
+  messages: Message[];
+  agentId: string | null;
+  scrollRef?: React.RefObject<HTMLDivElement> | null;
 }
 
 export function MessageList({ messages, scrollRef }: MessageListProps) {
-  const internalRef = useRef<HTMLDivElement>(null)
-  const ref = scrollRef ?? internalRef
+  const internalRef = useRef<HTMLDivElement>(null);
+  const ref = scrollRef ?? internalRef;
 
   useEffect(() => {
     if (ref.current) {
-      ref.current.scrollTop = ref.current.scrollHeight
+      ref.current.scrollTop = ref.current.scrollHeight;
     }
-  }, [ref])
+  }, [ref]);
 
   return (
     <div ref={ref} className="flex-1 overflow-y-auto p-4 bg-gray-50">
@@ -36,5 +36,5 @@ export function MessageList({ messages, scrollRef }: MessageListProps) {
         ))
       )}
     </div>
-  )
+  );
 }

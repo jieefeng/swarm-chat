@@ -1,24 +1,24 @@
-'use client'
+"use client";
 
-import ReactMarkdown from 'react-markdown'
-import type { Message } from '@/lib/types'
+import ReactMarkdown from "react-markdown";
+import type { Message } from "@/lib/types";
 
 interface MessageBubbleProps {
-  message: Message
-  isStreaming: boolean
-  onCopySuccess?: () => void
+  message: Message;
+  isStreaming: boolean;
+  onCopySuccess?: () => void;
 }
 
 export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
-  const isUser = message.type === 'user'
+  const isUser = message.type === "user";
 
   return (
-    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}>
+    <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}>
       <div
         className={`max-w-[70%] rounded-2xl px-4 py-2 ${
           isUser
-            ? 'bg-primary text-white'
-            : 'bg-white text-gray-800 border border-gray-200'
+            ? "bg-primary text-white"
+            : "bg-white text-gray-800 border border-gray-200"
         }`}
       >
         {!isUser && (
@@ -34,5 +34,5 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
         )}
       </div>
     </div>
-  )
+  );
 }

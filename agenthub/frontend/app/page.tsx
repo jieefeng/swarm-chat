@@ -1,24 +1,24 @@
-'use client'
+"use client";
 
-import { useEffect } from 'react'
-import { AgentList } from '@/components/agents/AgentList'
-import { MessageInput } from '@/components/chat/MessageInput'
-import { MessageList } from '@/components/chat/MessageList'
-import { api } from '@/lib/api'
-import { useChatStream } from '@/lib/hooks/useChatStream'
-import { useAgentStore } from '@/lib/stores/agentStore'
-import { useMessageStore } from '@/lib/stores/messageStore'
+import { useEffect } from "react";
+import { AgentList } from "@/components/agents/AgentList";
+import { MessageInput } from "@/components/chat/MessageInput";
+import { MessageList } from "@/components/chat/MessageList";
+import { api } from "@/lib/api";
+import { useChatStream } from "@/lib/hooks/useChatStream";
+import { useAgentStore } from "@/lib/stores/agentStore";
+import { useMessageStore } from "@/lib/stores/messageStore";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:7005'
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:7005";
 
 export default function HomePage() {
-  const agents = useAgentStore((s) => s.agents)
-  const setAgents = useAgentStore((s) => s.setAgents)
-  const messages = useMessageStore((s) => s.messages)
+  const agents = useAgentStore((s) => s.agents);
+  const setAgents = useAgentStore((s) => s.setAgents);
+  const messages = useMessageStore((s) => s.messages);
   const { sendMessage, connectionState, lastError } = useChatStream({
     agentId: null,
     baseUrl: API_BASE,
-  })
+  });
 
   useEffect(() => {
     // 加载初始数据
@@ -27,18 +27,18 @@ export default function HomePage() {
         const [msgsRes, agentsRes] = await Promise.all([
           api.getMessages(),
           api.getAgents(),
-        ])
-        useMessageStore.getState().reset()
+        ]);
+        useMessageStore.getState().reset();
         msgsRes.messages?.forEach((m) => {
-          useMessageStore.getState().addMessage(m)
-        })
-        setAgents(agentsRes.agents || [])
+          useMessageStore.getState().addMessage(m);
+        });
+        setAgents(agentsRes.agents || []);
       } catch (err) {
-        console.error('Failed to load data:', err)
+        console.error("Failed to load data:", err);
       }
-    }
-    loadData()
-  }, [setAgents])
+    };
+    loadData();
+  }, [setAgents]);
 
   return (
     <div className="flex flex-col h-screen">
@@ -46,11 +46,11 @@ export default function HomePage() {
       <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 bg-white">
         <h1 className="text-xl font-semibold">AgentHub</h1>
         <div className="text-sm text-gray-500">
-          {connectionState === 'connected'
-            ? '🟢 已连接'
-            : connectionState === 'connecting'
-              ? '🟡 连接中...'
-              : '⚪ 空闲'}
+          {connectionState === "connected"
+            ? "🟢 已连接"
+            : connectionState === "connecting"
+              ? "🟡 连接中..."
+              : "⚪ 空闲"}
         </div>
       </div>
 
@@ -61,7 +61,7 @@ export default function HomePage() {
           <MessageList messages={messages} agentId={null} />
           <MessageInput
             onSubmit={sendMessage}
-            disabled={connectionState === 'connecting'}
+            disabled={connectionState === "connecting"}
             mentionCandidates={agents.map((a) => ({ id: a.id, label: a.name }))}
           />
         </div>
@@ -73,5 +73,5 @@ export default function HomePage() {
         </div>
       )}
     </div>
-  )
+  );
 }

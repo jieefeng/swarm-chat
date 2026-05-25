@@ -1,13 +1,13 @@
-import { create } from 'zustand'
-import type { Message } from '@/lib/types'
+import { create } from "zustand";
+import type { Message } from "@/lib/types";
 
 interface MessageState {
-  messages: Message[]
-  isStreaming: boolean
-  addMessage: (msg: Message) => void
-  appendStreamChunk: (messageId: string, chunk: string) => void
-  setStreaming: (v: boolean) => void
-  reset: () => void
+  messages: Message[];
+  isStreaming: boolean;
+  addMessage: (msg: Message) => void;
+  appendStreamChunk: (messageId: string, chunk: string) => void;
+  setStreaming: (v: boolean) => void;
+  reset: () => void;
 }
 
 export const useMessageStore = create<MessageState>((set) => ({
@@ -22,4 +22,4 @@ export const useMessageStore = create<MessageState>((set) => ({
     })),
   setStreaming: (v) => set({ isStreaming: v }),
   reset: () => set({ messages: [], isStreaming: false }),
-}))
+}));
