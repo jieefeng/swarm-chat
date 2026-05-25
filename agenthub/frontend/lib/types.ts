@@ -9,6 +9,12 @@ export interface Message {
   role?: string // SSE message uses role instead of sender
 }
 
+export interface MentionCandidate {
+  id: string
+  label: string
+  avatar?: string
+}
+
 export interface Agent {
   id: string
   name: string
