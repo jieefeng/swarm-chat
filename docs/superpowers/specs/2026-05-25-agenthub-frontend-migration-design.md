@@ -104,9 +104,13 @@ agenthub/frontend/
    }
    ```
    - 移除旧 tailwindcss@3.x, autoprefixer, eslint, prettier
+   - 必须包含 `"type": "module"`（Next.js 15 Turbopack 兼容性）
 
 2. **重写 postcss.config.mjs**
    ```js
+   // postcss.config.mjs
+   // Required for Next.js 15 Turbopack compatibility
+   // Do NOT use CommonJS (module.exports) or array format
    export default {
      plugins: {
        '@tailwindcss/postcss': {},
@@ -114,6 +118,7 @@ agenthub/frontend/
    };
    ```
    - 对象格式，无 autoprefixer（v4 内置）
+   - ESM export，兼容 Turbopack
 
 3. **重写 app/globals.css**
    ```css
@@ -123,14 +128,21 @@ agenthub/frontend/
      --color-primary: #3b82f6;
      --color-secondary: #EC4899;
      --font-sans: "Inter", system-ui, sans-serif;
+
+     /* ✅ 必须显式声明，否则响应式类 (md:, lg:, etc.) 失效 */
+     --breakpoint-sm: 640px;
+     --breakpoint-md: 768px;
+     --breakpoint-lg: 1024px;
+     --breakpoint-xl: 1280px;
    }
    ```
    - 删除 tailwind.config.ts（v4 不再需要）
+   - @theme 是 opt-in replacement，未声明的默认变量不会自动继承
 
 4. **创建 biome.json**
    ```json
    {
-     "$schema": "https://biomejs.dev/schemas/2.0.0/schema.json",
+     "$schema": "https://biomejs.dev/schemas/2.1.0/schema.json",
      "organizeImports": { "enabled": true },
      "linter": {
        "enabled": true,
@@ -161,6 +173,7 @@ agenthub/frontend/
      }
    }
    ```
+   - Schema 版本更新至 2.1.0（修复 React 19 Server Actions 误报问题）
 
 5. **更新 tsconfig.json**
    - `strict: true`
@@ -371,12 +384,20 @@ Each phase is NOT complete until ALL pass:
   --color-primary: #3b82f6;
   --color-secondary: #EC4899;
   --font-sans: "Inter", system-ui, sans-serif;
+
+  /* ✅ 必须显式声明，否则响应式类 (md:, lg:, etc.) 失效 */
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
 }
 ```
 
 - 无需 tailwind.config.ts
 - PostCSS 插件：`@tailwindcss/postcss`
 - 版本：tailwindcss@^4.1.0, @tailwindcss/postcss@^4.1.0（必须一致）
+- @theme 是 opt-in replacement，未声明的默认变量不会自动继承
+- package.json 必须包含 `"type": "module"`（Next.js 15 Turbopack 兼容性）
 
 ### 5.2 SSE 重连策略
 
