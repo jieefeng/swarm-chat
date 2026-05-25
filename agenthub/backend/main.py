@@ -1,15 +1,25 @@
 """AgentHub MVP - FastAPI主应用"""
+import sys
 import os
+from pathlib import Path
+
+# 允许直接运行和模块导入两种方式
+_current_dir = Path(__file__).parent.resolve()
+_root_dir = _current_dir.parent.parent
+sys.path.insert(0, str(_root_dir))
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
+import uvicorn
 
-from routers import messages
-from services.sse_manager import sse_manager
+from agenthub.backend.routers import messages, events
+from agenthub.backend.services.sse_manager import sse_manager
 
 
 API_KEY = os.getenv("API_KEY", "dev-secret-key")
+PORT = int(os.getenv("PORT", "7005"))
 
 
 @asynccontextmanager
@@ -53,7 +63,7 @@ async def verify_api_key(request: Request, call_next):
 
 
 # 注册路由
-from routers import messages, events
+from agenthub.backend.routers import messages, events
 app.include_router(messages.router)
 app.include_router(events.router)
 
@@ -68,3 +78,7 @@ async def health_check():
 async def root():
     """根路径"""
     return {"message": "AgentHub MVP API", "version": "1.0.0"}
+
+
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="0.0.0.0", port=PORT, reload=True)

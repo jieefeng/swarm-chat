@@ -7,7 +7,7 @@ from unittest.mock import patch, MagicMock
 # 添加父目录到路径以导入模块
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from services.session import SessionManager, AGENT_CONFIGS
+from agenthub.backend.services.session import SessionManager, AGENT_CONFIGS
 
 
 class TestSessionManager:
@@ -46,7 +46,7 @@ class TestSessionManager:
     @pytest.mark.asyncio
     async def test_send_message_to_agent(self):
         """UT-S004: 发送消息给Agent，通过mock返回Claude响应"""
-        from services.session import SessionManager
+        from agenthub.backend.services.session import SessionManager
 
         session_manager = SessionManager()
         session_manager.create_session("test-session", agent_id="pm")

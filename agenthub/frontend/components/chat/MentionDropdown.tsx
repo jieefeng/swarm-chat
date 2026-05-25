@@ -1,10 +1,10 @@
-'use client';
+'use client'
 
-import { Agent } from '@/lib/types';
+import type { Agent } from '@/lib/types'
 
 interface MentionDropdownProps {
-  options: Agent[];
-  onSelect: (agent: Agent) => void;
+  options: Agent[]
+  onSelect: (agent: Agent) => void
 }
 
 export function MentionDropdown({ options, onSelect }: MentionDropdownProps) {
@@ -13,7 +13,7 @@ export function MentionDropdown({ options, onSelect }: MentionDropdownProps) {
       <div className="absolute bottom-full mb-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 p-4 text-center text-gray-500 text-sm">
         无匹配Agent
       </div>
-    );
+    )
   }
 
   return (
@@ -31,5 +31,5 @@ export function MentionDropdown({ options, onSelect }: MentionDropdownProps) {
         </button>
       ))}
     </div>
-  );
+  )
 }

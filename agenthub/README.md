@@ -13,7 +13,7 @@ cp .env.example .env  # 编辑并填入 ANTHROPIC_API_KEY
 python main.py
 ```
 
-后端运行在 http://localhost:8000
+后端运行在 http://localhost:7005
 
 ### 前端
 
@@ -23,7 +23,7 @@ npm install
 npm run dev
 ```
 
-前端运行在 http://localhost:3000
+前端运行在 http://localhost:7000
 
 ## 功能
 

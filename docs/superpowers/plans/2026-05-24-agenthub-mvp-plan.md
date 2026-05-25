@@ -10,6 +10,98 @@
 
 ---
 
+## 用户故事
+
+## 用户故事：@指令触发Agent
+
+**用户角色**：作为 用户
+**使用场景**：我希望在群聊中指定某个Agent进行沟通时
+**达成目标**：能够 通过@指令（如@pm、@architect）触发特定Agent响应
+**核心价值**：以便 获得特定角色专家的精准回复，避免广播式噪音
+
+**验收标准**：
+1. 输入 `@pm 请分析需求` 时，只有PM Agent响应
+2. 输入 `@architect 架构设计` 时，只有Architect Agent响应
+3. @指令格式为 `@agentID 内容`，正则匹配 `^@(\w+)\s+(.*)$`
+4. @指令后跟随的内容作为消息本体发送给目标Agent
+5. 未匹配的agentID当作普通消息处理
+
+**优先级**：Must
+
+---
+
+## 用户故事：消息广播
+
+**用户角色**：作为 用户
+**使用场景**：我希望向所有Agent同时提问时
+**达成目标**：能够 在不使用@指令时，消息自动广播给所有Agent
+**核心价值**：以便 高效收集多专家意见，适合需求评审和头脑风暴场景
+
+**验收标准**：
+1. 无@指令的消息同时触发所有已配置的Agent
+2. 广播模式下所有Agent并行处理，互不阻塞
+3. 各Agent响应通过SSE实时推送展示
+4. 响应顺序不固定，由处理速度决定
+5. 返回结果中 `is_broadcast: true` 标识广播消息
+
+**优先级**：Must
+
+---
+
+## 用户故事：SSE实时推送
+
+**用户角色**：作为 前端界面
+**使用场景**：我希望在新消息到达时无需轮询即可实时显示
+**达成目标**：能够 通过SSE（Server-Sent Events）接收后端推送的实时消息
+**核心价值**：以便 用户体验流畅的即时通讯效果，消息秒级可见
+
+**验收标准**：
+1. 前端通过 `GET /api/events` 建立SSE连接
+2. 用户发送消息后，立即通过SSE推送用户消息到前端
+3. Agent响应完成后，通过SSE推送Agent消息到前端
+4. 终止信号通过 `termination` 事件类型推送
+5. SSE连接断开时自动重连
+
+**优先级**：Must
+
+---
+
+## 用户故事：终止关键词检测
+
+**用户角色**：作为 系统
+**使用场景**：我希望在人机交互中识别终止讨论的信号
+**达成目标**：能够 检测消息中的终止关键词（如"结束讨论"、"确认方案"）并触发终止流程
+**核心价值**：以便 在讨论达成共识或有明确结论时，优雅地结束当前话题
+
+**验收标准**：
+1. 支持的终止关键词列表：`["结束讨论", "开始实现", "确认方案", "重新讨论"]`
+2. 检测到终止关键词后，触发 `termination` SSE事件
+3. 终止事件包含 `keyword` 和 `message_id` 字段
+4. 前端收到终止事件后弹出提示
+5. 终止关键词匹配为包含匹配，不需完全一致
+
+**优先级**：Should
+
+---
+
+## 用户故事：消息历史查询
+
+**用户角色**：作为 前端界面
+**使用场景**：我希望页面加载时能获取历史消息记录
+**达成目标**：能够 通过 `GET /api/messages` 和 `GET /api/agents` 查询历史消息和Agent列表
+**核心价值**：以便 用户刷新页面或重新连接时，能恢复完整的对话上下文
+
+**验收标准**：
+1. `GET /api/messages` 返回消息列表，按时间戳升序排列
+2. `GET /api/messages?limit=N` 支持限制返回消息数量，默认50条
+3. `GET /api/agents` 返回已配置的Agent列表（id、name、role）
+4. 消息结构包含：`id`, `sender`, `sender_name`, `content`, `timestamp`, `type`
+5. Agent结构包含：`id`, `name`, `role`
+
+**优先级**：Should
+
+---
+
 ## 文件结构
 
 ```
@@ -19,7 +111,7 @@ agenthub/
 │   ├── requirements.txt           # Python依赖
 │   ├── routers/
 │   │   ├── __init__.py
-│   │   ├── messages.py            # POST /api/messages
+│   │   ├── messages.py            # POST /api/messages, GET /api/messages, GET /api/agents
 │   │   └── events.py              # GET /api/events (SSE)
 │   └── services/
 │       ├── __init__.py
@@ -59,6 +151,14 @@ agenthub/
 - Create: `agenthub/backend/main.py`
 - Create: `agenthub/backend/models/__init__.py`
 - Create: `agenthub/backend/models/message.py`
+
+**验收标准：**
+- [ ] `requirements.txt` 包含 fastapi、uvicorn、anthropic、pydantic、python-dotenv、sse-starlette
+- [ ] `main.py` 包含 FastAPI 初始化和 CORS 中间件配置
+- [ ] `main.py` 包含 `/` 和 `/health` 端点
+- [ ] `models/message.py` 包含 Message 和 SendMessageRequest 模型定义
+- [ ] `models/`, `routers/`, `services/` 目录包含 `__init__.py` 空文件
+- [ ] 项目可通过 `python main.py` 启动，监听 0.0.0.0:8000
 
 - [ ] **Step 1: 创建依赖文件**
 
@@ -158,6 +258,14 @@ git commit -m "feat: backend project structure and FastAPI setup"
 **Files:**
 - Create: `agenthub/backend/services/claude.py`
 
+**验收标准：**
+- [ ] `ClaudeAdapter` 类包含 `create_session` 方法，使用 `anthropic.Anthropic` 创建会话
+- [ ] `create_session` 返回包含 `session_id` 和 `model` 的字典
+- [ ] `send_message` 方法发送消息到指定会话，返回响应文本
+- [ ] 使用环境变量 `ANTHROPIC_API_KEY` 配置API Key
+- [ ] 默认模型为 `claude-sonnet-4-20250514`
+- [ ] 模块导出单例 `claude_adapter` 供其他服务使用
+
 - [ ] **Step 1: 编写Claude适配器**
 
 ```python
@@ -208,6 +316,14 @@ git commit -m "feat: add Claude adapter"
 
 **Files:**
 - Create: `agenthub/backend/services/session.py`
+
+**验收标准：**
+- [ ] `AGENT_CONFIGS` 包含 `pm` 和 `architect` 两个Agent配置
+- [ ] 每个Agent配置包含 `name`、`role`、`system_prompt`
+- [ ] `SessionManager` 支持 `get_or_create_session` 方法，缓存会话ID
+- [ ] `get_system_prompt` 返回指定Agent的系统提示词
+- [ ] `send_to_agent` 封装会话创建和消息发送逻辑
+- [ ] 模块导出单例 `session_manager` 供其他服务使用
 
 - [ ] **Step 1: 编写会话管理器**
 
@@ -317,6 +433,15 @@ git commit -m "feat: add session manager for agent Claude会话"
 **Files:**
 - Create: `agenthub/backend/services/router.py`
 
+**验收标准：**
+- [ ] `parse_at_mention` 方法使用正则 `^@(\w+)\s+(.*)$` 解析@指令
+- [ ] @指令解析成功返回 `(agent_id, content)` 元组
+- [ ] @指令解析失败返回 `(None, 原始文本)`
+- [ ] `get_target_agents` 方法：无@时返回所有Agent列表，有@时返回目标Agent列表
+- [ ] `is_termination_signal` 方法检测终止关键词，支持 `["结束讨论", "开始实现", "确认方案", "重新讨论"]`
+- [ ] `route_message` 返回包含 `targets`、`content`、`is_broadcast`、`is_termination`、`termination_keyword` 的字典
+- [ ] 模块导出单例 `router` 供其他服务使用
+
 - [ ] **Step 1: 编写消息路由器**
 
 ```python
@@ -381,6 +506,15 @@ git commit -m "feat: add message router with @mention parsing"
 **Files:**
 - Create: `agenthub/backend/services/memory.py`
 
+**验收标准：**
+- [ ] `MemoryManager` 类管理消息列表，默认上下文窗口20条
+- [ ] `add_message` 方法添加消息，返回包含 `id`、`sender`、`sender_name`、`content`、`timestamp`、`type` 的字典
+- [ ] `add_message` 使用 `uuid.uuid4().hex[:8]` 生成8位消息ID
+- [ ] `add_message` 超过上下文窗口时，保留最近20条消息
+- [ ] `get_messages` 方法支持 `limit` 参数，默认返回最近50条消息
+- [ ] `get_context_for_agent` 返回最近10条消息的上下文字符串，格式为 `[{sender_name}]: {content[:200]}`
+- [ ] 模块导出单例 `memory_manager` 供其他服务使用
+
 - [ ] **Step 1: 编写内存管理器**
 
 ```python
@@ -438,6 +572,14 @@ git commit -m "feat: add memory manager for shared context"
 **Files:**
 - Create: `agenthub/backend/services/sse_manager.py`
 
+**验收标准：**
+- [ ] `SSEEventManager` 类管理订阅者队列集合
+- [ ] `subscribe` 方法返回异步生成器，管理队列订阅生命周期
+- [ ] `push_message` 方法推送消息事件，事件类型为 `message`
+- [ ] `push_termination` 方法推送终止事件，事件类型为 `termination`，包含 `keyword` 和 `message_id`
+- [ ] 事件格式符合SSE规范：`event: {type}\ndata: {json}\n\n`
+- [ ] 模块导出单例 `sse_manager` 供其他服务使用
+
 - [ ] **Step 1: 编写SSE管理器**
 
 ```python
@@ -491,6 +633,17 @@ git commit -m "feat: add SSE event manager"
 **Files:**
 - Create: `agenthub/backend/routers/messages.py`
 - Create: `agenthub/backend/routers/events.py`
+
+**验收标准：**
+- [ ] `POST /api/messages` 端点接收 `SendMessageRequest`，返回发送结果
+- [ ] `POST /api/messages` 解析@指令，路由到目标Agent
+- [ ] `POST /api/messages` 检测终止关键词，有则返回 `is_termination: true`
+- [ ] `POST /api/messages` 返回 `success`、`message_id`、`is_broadcast` 字段
+- [ ] `GET /api/messages` 端点返回消息列表查询接口
+- [ ] `GET /api/messages` 支持 `limit` 查询参数
+- [ ] `GET /api/agents` 端点返回已配置Agent列表
+- [ ] `GET /api/events` SSE端点返回事件流
+- [ ] `GET /api/events` 使用 `EventSourceResponse` 实现SSE
 
 - [ ] **Step 1: 创建消息路由**
 
@@ -562,6 +715,21 @@ async def send_message(req: SendMessageRequest):
             await sse_manager.push_message(error_msg)
 
     return {"success": True, "message_id": user_msg["id"], "is_broadcast": route_result["is_broadcast"]}
+
+@router_api.get("/messages")
+async def get_messages(limit: int = 50):
+    """获取消息历史"""
+    messages = memory_manager.get_messages(limit=limit)
+    return {"messages": messages}
+
+@router_api.get("/agents")
+async def get_agents():
+    """获取Agent列表"""
+    agents = [
+        {"id": agent_id, **config}
+        for agent_id, config in AGENT_CONFIGS.items()
+    ]
+    return {"agents": agents}
 ```
 
 - [ ] **Step 2: 创建SSE事件路由**
@@ -620,6 +788,16 @@ git commit -m "feat: add API routes and SSE endpoint"
 - Create: `agenthub/frontend/tailwind.config.ts`
 - Create: `agenthub/frontend/app/globals.css`
 - Create: `agenthub/frontend/app/layout.tsx`
+
+**验收标准：**
+- [ ] `package.json` 包含 Next.js 14、React 18、react-markdown 依赖
+- [ ] `package.json` 包含 TypeScript、TailwindCSS、PostCSS、autoprefixer 开发依赖
+- [ ] `tsconfig.json` 配置 `paths: { "@/*": ["./*"] }` 支持路径别名
+- [ ] `next.config.js` 配置 API 代理，将 `/api/*` 转发到 `http://localhost:8000/*`
+- [ ] `tailwind.config.ts` 配置 content 路径覆盖 `./app/**/*` 和 `./components/**/*`
+- [ ] `globals.css` 包含 `@tailwind base`、`@tailwind components`、`@tailwind utilities`
+- [ ] `layout.tsx` 包含 Metadata 配置，标题为 "AgentHub"
+- [ ] 项目可通过 `npm install && npm run dev` 启动，监听 localhost:3000
 
 - [ ] **Step 1: 创建package.json**
 
@@ -685,7 +863,7 @@ const nextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:8000/api/:path*',
+        destination: 'http://localhost:8000/:path*',
       },
     ];
   },
@@ -771,6 +949,16 @@ git commit -m "feat: add Next.js project structure"
 **Files:**
 - Create: `agenthub/frontend/lib/types.ts`
 - Create: `agenthub/frontend/lib/api.ts`
+
+**验收标准：**
+- [ ] `types.ts` 导出 `Message` 接口，包含 `id`、`sender`、`sender_name`、`content`、`timestamp`、`type`
+- [ ] `types.ts` 导出 `Agent` 接口，包含 `id`、`name`、`role`
+- [ ] `types.ts` 导出 `SendMessageResponse` 接口，包含 `success`、`message_id`、`is_broadcast?`、`is_termination?`
+- [ ] `api.ts` 的 `sendMessage` 方法 POST 到 `/api/messages`
+- [ ] `api.ts` 的 `getMessages` 方法 GET `/api/messages?limit={limit}`
+- [ ] `api.ts` 的 `getAgents` 方法 GET `/api/agents`
+- [ ] `createSSEConnection` 函数建立 `/api/events` SSE连接
+- [ ] SSE 监听 `message` 和 `termination` 两种事件类型
 
 - [ ] **Step 1: 创建类型定义**
 
@@ -870,6 +1058,16 @@ git commit -m "feat: add frontend type definitions and API service"
 **Files:**
 - Create: `agenthub/frontend/components/chat/MessageBubble.tsx`
 
+**验收标准：**
+- [ ] `MessageBubble` 组件接收 `Message` 类型 `message` prop
+- [ ] 根据 `message.type` 区分用户消息和Agent消息，使用不同样式
+- [ ] 使用 `react-markdown` 渲染消息内容
+- [ ] 显示发送者名称 `message.sender_name`
+- [ ] 显示格式化的时间戳（时:分）
+- [ ] PM Agent 使用蓝色主题样式
+- [ ] 其他Agent使用绿色主题样式
+- [ ] 用户消息使用灰色主题样式，右对齐显示
+
 - [ ] **Step 1: 创建MessageBubble组件**
 
 ```tsx
@@ -930,6 +1128,14 @@ git commit -m "feat: add MessageBubble component"
 **Files:**
 - Create: `agenthub/frontend/components/chat/MessageList.tsx`
 
+**验收标准：**
+- [ ] `MessageList` 组件接收 `Message[]` 类型 `messages` prop
+- [ ] 使用 `useEffect` 监听 `messages` 变化，自动滚动到底部
+- [ ] 使用 `useRef` 引用列表容器 DOM 元素
+- [ ] 消息为空时显示占位提示文字 "暂无消息，开始对话吧"
+- [ ] 使用 `MessageBubble` 组件渲染每条消息
+- [ ] 列表容器使用 `overflow-y-auto` 实现垂直滚动
+
 - [ ] **Step 1: 创建MessageList组件**
 
 ```tsx
@@ -985,6 +1191,14 @@ git commit -m "feat: add MessageList component"
 
 **Files:**
 - Create: `agenthub/frontend/components/chat/MessageInput.tsx`
+
+**验收标准：**
+- [ ] `MessageInput` 组件接收 `onSend` 函数和 `disabled?` 可选 prop
+- [ ] 使用受控组件管理输入框状态
+- [ ] 表单提交时调用 `onSend` 并清空输入框
+- [ ] `disabled` 为 true 时显示占位符 "等待回复..."，输入框禁用
+- [ ] 发送按钮在输入为空或 `disabled` 为 true 时禁用显示
+- [ ] 按钮使用条件样式：可发送时蓝色激活，不可发送时灰色禁用
 
 - [ ] **Step 1: 创建MessageInput组件**
 
@@ -1049,6 +1263,13 @@ git commit -m "feat: add MessageInput component"
 **Files:**
 - Create: `agenthub/frontend/components/agents/AgentList.tsx`
 
+**验收标准：**
+- [ ] `AgentList` 组件接收 `Agent[]` 类型 `agents` prop
+- [ ] 侧边栏宽度 12rem (w-48)，白色背景
+- [ ] 标题 "Agent 列表" 使用 `text-sm font-semibold`
+- [ ] 每个Agent显示 `name` 和 `role`
+- [ ] Agent项之间使用 `border-b border-gray-100` 分隔
+
 - [ ] **Step 1: 创建AgentList组件**
 
 ```tsx
@@ -1091,6 +1312,17 @@ git commit -m "feat: add AgentList component"
 
 **Files:**
 - Create: `agenthub/frontend/app/page.tsx`
+
+**验收标准：**
+- [ ] 主页面使用 `'use client'` 指令
+- [ ] 使用 `useState` 管理 `messages`、`agents`、`loading` 状态
+- [ ] 页面加载时调用 `api.getMessages()` 和 `api.getAgents()` 初始化数据
+- [ ] 建立 SSE 连接，监听 `message` 和 `termination` 事件
+- [ ] `message` 事件将新消息追加到 `messages` 状态
+- [ ] `termination` 事件弹出 alert 显示终止关键词
+- [ ] 组件卸载时关闭 SSE 连接
+- [ ] `handleSend` 函数调用 `api.sendMessage()` 并设置 loading 状态
+- [ ] 布局包含 Header、AgentList 侧边栏、MessageList 和 MessageInput
 
 - [ ] **Step 1: 创建主页面**
 
@@ -1187,6 +1419,13 @@ git commit -m "feat: add main page with full UI"
 
 **Files:**
 - Create: `agenthub/README.md`
+
+**验收标准：**
+- [ ] README 包含项目简介 "IM聊天式多Agent协作平台"
+- [ ] 包含后端启动说明：`pip install`、`cp .env.example .env`、`python main.py`
+- [ ] 包含前端启动说明：`npm install`、`npm run dev`
+- [ ] 功能列表包含：@指令触发、广播消息、SSE实时推送、Spec格式输出、终止关键词
+- [ ] 技术栈说明前端为 Next.js 14 + TypeScript + TailwindCSS，后端为 FastAPI + Python
 
 - [ ] **Step 1: 创建README**
 

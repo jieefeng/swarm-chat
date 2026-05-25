@@ -1,15 +1,15 @@
-'use client';
+'use client'
 
-import ReactMarkdown from 'react-markdown';
-import { Message } from '@/lib/types';
+import ReactMarkdown from 'react-markdown'
+import type { Message } from '@/lib/types'
 
 interface MessageBubbleProps {
-  message: Message;
+  message: Message
 }
 
 export function MessageBubble({ message }: MessageBubbleProps) {
-  const isAgent = message.type === 'agent';
-  const isPM = message.sender === 'pm';
+  const isAgent = message.type === 'agent'
+  const isPM = message.sender === 'pm'
 
   return (
     <div className={`flex ${isAgent ? 'items-start' : 'items-end'} mb-4`}>
@@ -18,8 +18,8 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           isPM
             ? 'bg-blue-100 border border-blue-300 rounded-tl-none'
             : isAgent
-            ? 'bg-green-100 border border-green-300 rounded-tl-none'
-            : 'bg-gray-100 border border-gray-300 rounded-tr-none'
+              ? 'bg-green-100 border border-green-300 rounded-tl-none'
+              : 'bg-gray-100 border border-gray-300 rounded-tr-none'
         }`}
       >
         <div className="text-xs font-semibold text-gray-600 mb-1">
@@ -32,9 +32,9 @@ export function MessageBubble({ message }: MessageBubbleProps) {
       <div className="text-xs text-gray-400 mt-1 mx-2">
         {new Date(message.timestamp * 1000).toLocaleTimeString('zh-CN', {
           hour: '2-digit',
-          minute: '2-digit'
+          minute: '2-digit',
         })}
       </div>
     </div>
-  );
+  )
 }

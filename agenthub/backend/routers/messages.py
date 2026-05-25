@@ -5,10 +5,10 @@ from datetime import datetime
 from typing import Optional, List
 from fastapi import APIRouter, Query, HTTPException
 from pydantic import BaseModel
-from services.session import AGENT_CONFIGS, session_manager
-from services.memory_manager import memory_manager
-from services.sse_manager import sse_manager
-from services.router import MessageRouter
+from agenthub.backend.services.session import AGENT_CONFIGS, session_manager
+from agenthub.backend.services.memory_manager import memory_manager
+from agenthub.backend.services.sse_manager import sse_manager
+from agenthub.backend.services.router import MessageRouter
 
 router = APIRouter(prefix="/api", tags=["messages"])
 
@@ -41,6 +41,23 @@ class AgentInfo(BaseModel):
     role: str
 
 
+@router.get("/agents")
+async def get_agents():
+    """获取Agent列表"""
+    agents = [
+        {"id": agent_id, "name": config["name"], "role": config["role"]}
+        for agent_id, config in AGENT_CONFIGS.items()
+    ]
+    return {"agents": agents}
+
+
+@router.get("/messages")
+async def get_messages(limit: int = Query(50, ge=1, le=200)):
+    """获取消息历史"""
+    messages = memory_manager.get_messages(limit=limit)
+    return {"messages": messages}
+
+
 @router.post("/messages")
 async def send_message(req: SendMessageRequest):
     """发送消息并路由到相应Agent
@@ -57,7 +74,8 @@ async def send_message(req: SendMessageRequest):
     user_msg = memory_manager.add_message(
         role=req.sender,
         content=req.content,
-        agent_id=req.sender
+        agent_id=req.sender,
+        sender_name=req.sender_name
     )
 
     # 推送用户消息到SSE
@@ -75,10 +93,18 @@ async def send_message(req: SendMessageRequest):
             "is_termination": True
         }
 
-    # 获取目标Agent列表
+    # 获取目标Agent列表 (name可能需要转换为id)
     targets = route_result["target"]
     if not targets:
         targets = list(AGENT_CONFIGS.keys())
+    elif isinstance(targets, str):
+        # 单个name转换为id
+        from agenthub.backend.services.router import MessageRouter
+        targets = [MessageRouter._NAME_TO_ID.get(targets, targets)]
+    else:
+        # 多个name转换为id
+        from agenthub.backend.services.router import MessageRouter
+        targets = [MessageRouter._NAME_TO_ID.get(name, name) for name in targets]
 
     # 并行发送消息给Agent
     async def send_to_single_agent(agent_id: str) -> dict:
@@ -93,20 +119,27 @@ async def send_message(req: SendMessageRequest):
 
             response = session_manager.send_to_agent(agent_id, agent_message)
 
+            config = AGENT_CONFIGS.get(agent_id, {})
+            agent_name = config.get("name", agent_id)
+
             agent_msg = memory_manager.add_message(
                 role=agent_id,
                 content=response,
-                agent_id=agent_id
+                agent_id=agent_id,
+                sender_name=agent_name
             )
 
             await sse_manager.broadcast("message", agent_msg)
             return agent_msg
 
         except Exception as e:
+            config = AGENT_CONFIGS.get(agent_id, {})
+            agent_name = config.get("name", agent_id)
             error_msg = memory_manager.add_message(
                 role=agent_id,
                 content=f"Error: {str(e)}",
-                agent_id=agent_id
+                agent_id=agent_id,
+                sender_name=agent_name
             )
             await sse_manager.broadcast("message", error_msg)
             return error_msg

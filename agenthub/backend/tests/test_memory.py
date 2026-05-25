@@ -6,7 +6,7 @@ import os
 # 添加父目录到路径以导入模块
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from services.memory_manager import MemoryManager
+from agenthub.backend.services.memory_manager import MemoryManager
 
 
 class TestMemoryManager:
@@ -96,7 +96,7 @@ class TestMemoryManager:
         memory.add_message(role="user", content="测试")
         messages = memory.get_messages(limit=1)
         assert "timestamp" in messages[0]
-        assert isinstance(messages[0]["timestamp"], str)
+        assert isinstance(messages[0]["timestamp"], int)
 
     def test_agent_id_optional(self, memory):
         """测试agent_id参数可选"""

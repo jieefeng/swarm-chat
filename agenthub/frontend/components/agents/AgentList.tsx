@@ -1,9 +1,9 @@
-'use client';
+'use client'
 
-import { Agent } from '@/lib/types';
+import type { Agent } from '@/lib/types'
 
 interface AgentListProps {
-  agents: Agent[];
+  agents: Agent[]
 }
 
 export function AgentList({ agents }: AgentListProps) {
@@ -19,5 +19,5 @@ export function AgentList({ agents }: AgentListProps) {
         </div>
       ))}
     </div>
-  );
+  )
 }

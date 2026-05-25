@@ -11,14 +11,15 @@ class MemoryManager:
         self.messages: List[Dict] = []
         self.max_messages = max_messages
 
-    def add_message(self, role: str, content: str, agent_id: Optional[str] = None) -> Dict:
+    def add_message(self, role: str, content: str, agent_id: Optional[str] = None, sender_name: Optional[str] = None) -> Dict:
         """添加消息到历史，返回消息字典（含id）"""
         message = {
             "id": f"msg_{uuid.uuid4().hex[:8]}",
             "role": role,
             "content": content,
             "agent_id": agent_id,
-            "timestamp": datetime.now().isoformat()
+            "sender_name": sender_name or role,
+            "timestamp": int(datetime.now().timestamp())
         }
         self.messages.append(message)
 

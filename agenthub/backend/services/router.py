@@ -6,8 +6,12 @@ from .session import AGENT_CONFIGS
 class MessageRouter:
     """解析消息中的@指令，返回目标Agent和内容"""
 
-    # 支持的Agent列表 - 从session导入
-    AGENTS = list(AGENT_CONFIGS.keys())
+    # Agent ID -> name 映射 (从AGENT_CONFIGS构建)
+    _ID_TO_NAME = {agent_id: config["name"] for agent_id, config in AGENT_CONFIGS.items()}
+    # Agent name -> id 反向映射
+    _NAME_TO_ID = {config["name"]: agent_id for agent_id, config in AGENT_CONFIGS.items()}
+    # 支持的Agent名称列表
+    AGENT_NAMES = list(_NAME_TO_ID.keys())
 
     # 终止关键词 - 移除"开始实现"（歧义）
     TERMINATION_KEYWORDS = ["结束讨论", "确认方案", "重新讨论"]
@@ -55,7 +59,7 @@ class MessageRouter:
             else:
                 # 提取@后的Agent名
                 agent_name = message[1:space_idx]
-                if agent_name in self.AGENTS:
+                if agent_name in self.AGENT_NAMES:
                     result["target"] = agent_name
                     result["content"] = message[space_idx + 1:]
                 else:
@@ -66,7 +70,7 @@ class MessageRouter:
             # 无@开头，检查是否广播消息（原样返回视为广播）
             if "@" not in message:
                 # 广播消息 - 所有Agent
-                result["target"] = self.AGENTS
+                result["target"] = self.AGENT_NAMES
                 result["is_broadcast"] = True
                 result["content"] = message
 

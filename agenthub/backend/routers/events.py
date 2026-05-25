@@ -2,7 +2,7 @@
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from sse_starlette.sse import EventSourceResponse
-from services.sse_manager import sse_manager
+from agenthub.backend.services.sse_manager import sse_manager
 
 router = APIRouter(prefix="/api", tags=["events"])
 

@@ -6,7 +6,7 @@ import os
 # 添加父目录到路径以导入router模块
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from services.router import MessageRouter
+from agenthub.backend.services.router import MessageRouter
 
 
 class TestMessageRouter:

@@ -86,7 +86,8 @@ class BailianService:
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": message}
-            ]
+            ],
+            timeout=self.default_timeout
         )
         return response.choices[0].message.content
 
