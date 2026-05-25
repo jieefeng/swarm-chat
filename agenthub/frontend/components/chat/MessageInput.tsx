@@ -3,15 +3,9 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useEffect, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { z } from 'zod'
+import { type SendMessageInput, sendMessageSchema } from '@/lib/schemas/message'
 import type { MentionCandidate } from '@/lib/types'
 import { MentionDropdown } from './MentionDropdown'
-
-const sendMessageSchema = z.object({
-  content: z.string().min(1, '消息不能为空').max(5000, '消息过长'),
-})
-
-export type SendMessageInput = z.infer<typeof sendMessageSchema>
 
 interface MessageInputProps {
   onSubmit: (content: string) => void
