@@ -40,12 +40,14 @@ export function TaskPanel({ tasks }: TaskPanelProps) {
       <div className="space-y-2">
         {tasks.map((task) => {
           const config = STATUS_CONFIG[task.status] ?? STATUS_CONFIG.pending;
+          const label = config?.label ?? "未知";
+          const color = config?.color ?? "bg-gray-100 text-gray-600";
           return (
             <div key={task.id} className="flex items-center gap-2 text-sm">
               <span
-                className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${config.color}`}
+                className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${color}`}
               >
-                {config.label}
+                {label}
               </span>
               <span className="truncate text-gray-700">{task.title}</span>
               <span className="ml-auto text-xs text-gray-400">

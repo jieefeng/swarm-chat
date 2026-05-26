@@ -7,6 +7,8 @@ export interface Message {
   type: "user" | "agent";
   agent_id?: string;
   role?: string; // SSE message uses role instead of sender
+  messageType?: "text" | "task_panel" | "clarification" | "diff";
+  metadata?: Record<string, unknown>;
 }
 
 export interface MentionCandidate {
