@@ -19,7 +19,7 @@ from agenthub.backend.services.sse_manager import sse_manager
 
 
 API_KEY = os.getenv("API_KEY", "dev-secret-key")
-PORT = int(os.getenv("PORT", "7005"))
+PORT = int(os.getenv("PORT", "7000"))
 
 
 @asynccontextmanager
@@ -63,9 +63,10 @@ async def verify_api_key(request: Request, call_next):
 
 
 # 注册路由
-from agenthub.backend.routers import messages, events
+from agenthub.backend.routers import messages, events, tasks
 app.include_router(messages.router)
 app.include_router(events.router)
+app.include_router(tasks.router)
 
 
 @app.get("/health")
