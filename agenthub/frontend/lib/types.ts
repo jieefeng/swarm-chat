@@ -27,3 +27,58 @@ export interface SendMessageResponse {
   is_broadcast?: boolean;
   is_termination?: boolean;
 }
+
+// Task types
+export type TaskStatus =
+  | "pending"
+  | "running"
+  | "reviewing"
+  | "done"
+  | "failed"
+  | "escalate"
+  | "cancelled"
+  | "skipped";
+
+export interface Task {
+  id: string;
+  title: string;
+  description: string;
+  assigned_to: string;
+  depends_on: string[];
+  priority: string;
+  status: TaskStatus;
+  result: string | null;
+  retry_count: number;
+}
+
+// SSE extended event types
+export interface StreamChunkEvent {
+  message_id: string;
+  chunk: string;
+  seq: number;
+}
+
+export interface TaskCreatedEvent {
+  task_id: string;
+  title: string;
+  assigned_to: string;
+}
+
+export interface TaskUpdateEvent {
+  task_id: string;
+  status: TaskStatus;
+  title: string;
+}
+
+export interface ClarificationRequestEvent {
+  message_id: string;
+  question: string;
+  options: string[];
+}
+
+export interface ArtifactDiffEvent {
+  task_id: string;
+  file_path: string;
+  old_content: string;
+  new_content: string;
+}
