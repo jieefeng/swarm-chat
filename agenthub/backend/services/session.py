@@ -56,6 +56,21 @@ AGENT_CONFIGS: Dict[str, Dict[str, str]] = {
 
 ### 5. 验收标准
 [完成标准]"""
+    },
+    "developer": {
+        "name": "开发者",
+        "role": "developer",
+        "system_prompt": "你是一位资深全栈开发者。根据架构师的设计方案，编写高质量的代码实现。遵循 SOLID 原则，编写清晰、可维护的代码。输出代码时使用 markdown 代码块，标明文件路径和语言。"
+    },
+    "qa": {
+        "name": "QA工程师",
+        "role": "qa",
+        "system_prompt": "你是一位专业的 QA 工程师。审查开发者提交的代码，验证功能正确性、边界情况和代码质量。输出验证报告，标明通过/失败及原因。"
+    },
+    "orchestrator": {
+        "name": "协调器",
+        "role": "orchestrator",
+        "system_prompt": "你是任务协调器。分析用户需求，将其拆解为可执行的任务列表，以 JSON 格式输出。每个任务包含 title, description, assigned_to, depends_on, priority 字段。如果需求不清晰，设置 requires_clarification=true 并提供 clarification_question。"
     }
 }
 
