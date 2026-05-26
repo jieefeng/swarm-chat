@@ -1,7 +1,22 @@
 const MAX_RETRIES = 5;
 const BASE_DELAY = 1000;
 
-export type SSEEventType = "message" | "termination" | "error";
+// SSE event type constants
+export const SSE_EVENT_STREAM_CHUNK = "stream_chunk";
+export const SSE_EVENT_TASK_CREATED = "task_created";
+export const SSE_EVENT_TASK_UPDATE = "task_update";
+export const SSE_EVENT_CLARIFICATION_REQUEST = "clarification_request";
+export const SSE_EVENT_ARTIFACT_DIFF = "artifact_diff";
+
+export type SSEEventType =
+  | "message"
+  | "termination"
+  | "error"
+  | typeof SSE_EVENT_STREAM_CHUNK
+  | typeof SSE_EVENT_TASK_CREATED
+  | typeof SSE_EVENT_TASK_UPDATE
+  | typeof SSE_EVENT_CLARIFICATION_REQUEST
+  | typeof SSE_EVENT_ARTIFACT_DIFF;
 
 export interface SSEMessage {
   id?: string;
@@ -20,19 +35,37 @@ export interface SSEConnectionOptions {
   onMessage: (data: SSEMessage) => void;
   onTermination: (keyword: string) => void;
   onError: (error: string) => void;
+  onConnected?: () => void;
+  onStreamChunk?: (data: import("@/lib/types").StreamChunkEvent) => void;
+  onTaskCreated?: (data: import("@/lib/types").TaskCreatedEvent) => void;
+  onTaskUpdate?: (data: import("@/lib/types").TaskUpdateEvent) => void;
+  onClarification?: (
+    data: import("@/lib/types").ClarificationRequestEvent,
+  ) => void;
+  onArtifactDiff?: (data: import("@/lib/types").ArtifactDiffEvent) => void;
 }
 
 export function createSSEConnection(options: SSEConnectionOptions) {
   let aborted = false;
   let retryDelay = BASE_DELAY;
   let retryCount = 0;
+  let connected = false;
   const abortController = new AbortController();
 
   const API_KEY = process.env.NEXT_PUBLIC_API_KEY || "";
 
+  const notifyConnected = () => {
+    if (options.onConnected && !aborted && !connected) {
+      connected = true;
+      console.log("[SSE] Connection established, calling onConnected");
+      options.onConnected();
+    }
+  };
+
   const connect = async () => {
     if (aborted) return;
     try {
+      console.log("[SSE] Connecting to:", `${options.baseUrl}/api/events`);
       const response = await fetch(`${options.baseUrl}/api/events`, {
         headers: {
           "Content-Type": "application/json",
@@ -42,10 +75,14 @@ export function createSSEConnection(options: SSEConnectionOptions) {
         cache: "no-store",
         credentials: "include",
       });
+      console.log("[SSE] Response status:", response.status);
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
+
+      // 连接已建立，通知调用者
+      notifyConnected();
 
       const reader = response.body?.getReader();
       if (!reader) throw new Error("No response body");
@@ -55,29 +92,72 @@ export function createSSEConnection(options: SSEConnectionOptions) {
 
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
-
+        if (done) {
+          console.log("[SSE] Stream completed (done=true)");
+          break;
+        }
+        console.log("[SSE] Raw chunk received:", value.length, "bytes");
         buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
+        // 按双换行分割，处理完整的 event + data 块
+        const blocks = buffer.split("\n\n");
+        buffer = blocks.pop() || "";
 
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed || trimmed.startsWith(":")) continue;
+        for (const block of blocks) {
+          const lines = block.split("\n");
+          let eventType = "message";
+          let dataContent = "";
 
-          if (trimmed.startsWith("data:")) {
-            const data = trimmed.slice(5).trim();
-            if (data) {
-              try {
-                const parsed = JSON.parse(data);
-                if (parsed.keyword || parsed.type === "termination") {
-                  options.onTermination(parsed.keyword || "");
-                } else {
-                  options.onMessage(parsed);
-                }
-              } catch {
-                options.onMessage(data as unknown as SSEMessage);
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith("event:")) {
+              eventType = trimmed.slice(6).trim();
+            } else if (trimmed.startsWith("data:")) {
+              dataContent = trimmed.slice(5).trim();
+            }
+          }
+
+          if (dataContent) {
+            console.log(
+              `[SSE] Event: ${eventType}, Data: ${dataContent.substring(0, 100)}...`,
+            );
+            try {
+              const parsed = JSON.parse(dataContent);
+
+              if (eventType === "termination" || parsed.keyword) {
+                options.onTermination(parsed.keyword || "");
+              } else if (
+                eventType === SSE_EVENT_STREAM_CHUNK &&
+                options.onStreamChunk
+              ) {
+                options.onStreamChunk(parsed);
+              } else if (
+                eventType === SSE_EVENT_TASK_CREATED &&
+                options.onTaskCreated
+              ) {
+                options.onTaskCreated(parsed);
+              } else if (
+                eventType === SSE_EVENT_TASK_UPDATE &&
+                options.onTaskUpdate
+              ) {
+                options.onTaskUpdate(parsed);
+              } else if (
+                eventType === SSE_EVENT_CLARIFICATION_REQUEST &&
+                options.onClarification
+              ) {
+                options.onClarification(parsed);
+              } else if (
+                eventType === SSE_EVENT_ARTIFACT_DIFF &&
+                options.onArtifactDiff
+              ) {
+                options.onArtifactDiff(parsed);
+              } else {
+                options.onMessage(parsed);
               }
+            } catch {
+              console.log(
+                "[SSE] Parse failed for:",
+                dataContent.substring(0, 50),
+              );
             }
           }
         }
