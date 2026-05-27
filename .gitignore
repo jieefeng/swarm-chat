@@ -14,7 +14,17 @@ node_modules/
 # IDE
 .idea/
 .vscode/
+.cursor/
 *.swp
+
+# Tools
+.codegraph/
+.playwright-mcp/
+.superpowers/
+*.stackdump
+
+# Local env
+.env.local
 
 # OS
 .DS_Store
