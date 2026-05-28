@@ -132,6 +132,11 @@ def create_memory_manager():
         max_messages = int(os.getenv("MAX_MESSAGES", "1000"))
         ttl_days = int(os.getenv("MESSAGE_TTL_DAYS", "30"))
         try:
+            # Test connection synchronously (from_url is lazy, won't fail at construction)
+            import redis as sync_redis
+            client = sync_redis.from_url(redis_url)
+            client.ping()
+            client.close()
             manager = RedisMemoryManager(
                 redis_url=redis_url,
                 max_messages=max_messages,
