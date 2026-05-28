@@ -11,7 +11,7 @@ class MemoryManager:
         self.messages: List[Dict] = []
         self.max_messages = max_messages
 
-    def add_message(self, role: str, content: str, agent_id: Optional[str] = None, sender_name: Optional[str] = None) -> Dict:
+    async def add_message(self, role: str, content: str, user_id: str = "default", agent_id: Optional[str] = None, sender_name: Optional[str] = None) -> Dict:
         """添加消息到历史，返回消息字典（含id）"""
         message = {
             "id": f"msg_{uuid.uuid4().hex[:8]}",
@@ -30,11 +30,11 @@ class MemoryManager:
 
         return message
 
-    def get_messages(self, limit: int = 50) -> List[Dict]:
+    async def get_messages(self, user_id: str = "default", limit: int = 50) -> List[Dict]:
         """获取最近的消息"""
         return self.messages[-limit:] if limit > 0 else self.messages
 
-    def get_context_for_agent(self, agent_id: str, limit: int = 10) -> str:
+    async def get_context_for_agent(self, agent_id: str, user_id: str = "default", limit: int = 10) -> str:
         """获取指定Agent的上下文
 
         Args:
@@ -44,7 +44,7 @@ class MemoryManager:
         Returns:
             格式化的上下文字符串
         """
-        recent = self.get_messages(limit=limit)
+        recent = await self.get_messages(limit=limit)
         context_parts = []
         for msg in recent:
             role = msg.get('role', 'unknown')
@@ -52,7 +52,7 @@ class MemoryManager:
             context_parts.append(f"[{role}]: {content}")
         return "\n".join(context_parts)
 
-    def clear(self):
+    async def clear(self, user_id: str = "default"):
         """清空消息历史"""
         self.messages.clear()
 
