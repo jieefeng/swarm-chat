@@ -15,12 +15,12 @@ export function extractHtmlFromMarkdown(content: string): string | null {
 }
 
 /**
- * 处理 HTML：注入 viewport、基础样式
+ * 处理 HTML：注入 CSP、viewport、基础样式
  *
  * 顺序依赖说明：
  * 1. 先检查 <html> 是否存在，不存在则包裹完整骨架（含 <head> 和 <body>）
  * 2. 再检查 DOCTYPE，不存在则前缀添加
- * 3. 最后注入 viewport 和样式——此时 <head> 和 </head> 一定存在
+ * 3. 最后注入 CSP、viewport 和样式——此时 <head> 和 </head> 一定存在
  * 如果调换步骤 1 和 3，当输入为裸片段时 <head> 不存在，replace 会静默失败
  */
 export function processHtml(htmlCode: string): string {
@@ -32,6 +32,12 @@ export function processHtml(htmlCode: string): string {
 
   if (!html.includes("<!DOCTYPE")) {
     html = "<!DOCTYPE html>" + html;
+  }
+
+  if (!html.includes("Content-Security-Policy")) {
+    html = html.replace(/<head>/i,
+      `<head><meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https:">`
+    );
   }
 
   if (!html.includes("viewport")) {
