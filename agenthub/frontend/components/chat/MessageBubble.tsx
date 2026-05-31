@@ -14,7 +14,6 @@ import type { Message } from "@/lib/types";
 interface MessageBubbleProps {
   message: Message;
   isStreaming: boolean;
-  onCopySuccess?: () => void;
 }
 
 export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
