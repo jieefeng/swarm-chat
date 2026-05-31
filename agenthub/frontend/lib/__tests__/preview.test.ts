@@ -36,6 +36,20 @@ describe("processHtml", () => {
     expect(result).toContain("<html");
     expect(result).toContain("viewport");
   });
+
+  it("处理有 <html> 但无 DOCTYPE 的 HTML", () => {
+    const html = "<html><head></head><body>Test</body></html>";
+    const result = processHtml(html);
+    expect(result).toContain("<!DOCTYPE html>");
+    expect(result).toContain("viewport");
+  });
+
+  it("幂等性：两次调用结果一致", () => {
+    const html = "<html><head></head><body></body></html>";
+    const first = processHtml(html);
+    const second = processHtml(first);
+    expect(second).toBe(first);
+  });
 });
 
 describe("extractTitle", () => {
@@ -49,5 +63,13 @@ describe("extractTitle", () => {
 
   it("无标题时返回默认值", () => {
     expect(extractTitle("普通文本")).toBe("预览");
+  });
+
+  it("不匹配 H2 标题", () => {
+    expect(extractTitle("## Sub Title")).toBe("预览");
+  });
+
+  it("不匹配 H3 标题", () => {
+    expect(extractTitle("### Sub Sub Title")).toBe("预览");
   });
 });
