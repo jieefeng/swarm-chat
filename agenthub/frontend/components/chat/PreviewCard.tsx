@@ -24,14 +24,22 @@ export function PreviewCard({
     setRefreshKey((k) => k + 1);
   }, []);
 
+  const handleCollapse = useCallback(() => {
+    setIsCollapsed((prev) => !prev);
+  }, []);
+
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(htmlCode).catch(() => {
-      const textarea = document.createElement("textarea");
-      textarea.value = htmlCode;
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
+      try {
+        const textarea = document.createElement("textarea");
+        textarea.value = htmlCode;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      } catch {
+        window.alert("复制失败，请手动选择内容复制");
+      }
     });
   }, [htmlCode]);
 
@@ -40,7 +48,7 @@ export function PreviewCard({
       <PreviewToolbar
         title={title}
         isCollapsed={isCollapsed}
-        onCollapse={() => setIsCollapsed(!isCollapsed)}
+        onCollapse={handleCollapse}
         onRefresh={handleRefresh}
         onCopy={handleCopy}
         onExpand={onExpand}
