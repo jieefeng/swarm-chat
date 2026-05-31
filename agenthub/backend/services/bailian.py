@@ -1,6 +1,7 @@
 """阿里云百炼 API 服务封装 - 兼容 OpenAI 接口"""
 import os
 import asyncio
+from collections.abc import Generator
 from typing import Optional
 from openai import OpenAI
 
@@ -14,7 +15,7 @@ class BailianService:
             api_key=self.api_key,
             base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
         )
-        self.model = "qwen3.6-plus-2026-04-02"
+        self.model = "qwen3.5-plus-2026-04-20"
         self.default_timeout = 60  # 秒
 
     async def send_message_with_retry(
@@ -90,6 +91,31 @@ class BailianService:
             timeout=self.default_timeout
         )
         return response.choices[0].message.content
+
+    def send_message_stream(
+        self,
+        session_id: str,
+        message: str,
+        system_prompt: str = ""
+    ) -> Generator[str, None, None]:
+        """流式发送消息到百炼 API，逐个 yield 文本片段
+
+        Yields:
+            LLM 响应的文本片段
+        """
+        stream = self.client.chat.completions.create(
+            model=self.model,
+            max_tokens=1024,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": message}
+            ],
+            timeout=self.default_timeout,
+            stream=True
+        )
+        for chunk in stream:
+            if chunk.choices and chunk.choices[0].delta.content:
+                yield chunk.choices[0].delta.content
 
 
 # 全局百炼服务实例

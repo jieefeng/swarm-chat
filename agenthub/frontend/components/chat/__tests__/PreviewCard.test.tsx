@@ -1,7 +1,11 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { PreviewCard } from "../PreviewCard";
 
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 describe("PreviewCard", () => {
   const mockHtml = "<html><body><div>Hello World</div></body></html>";
 

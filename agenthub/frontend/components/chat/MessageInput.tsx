@@ -40,6 +40,7 @@ export function MessageInput({
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
     reset,
   } = useForm<SendMessageInput>({
@@ -59,6 +60,7 @@ export function MessageInput({
     const cursorPos = e.target.selectionStart ?? 0;
 
     setInput(value);
+    setValue("content", value, { shouldValidate: false });
 
     const textBeforeCursor = value.slice(0, cursorPos);
     const lastAtIndex = textBeforeCursor.lastIndexOf("@");
@@ -91,7 +93,9 @@ export function MessageInput({
     const afterMention = input.slice(mentionState.cursorPos);
     const mentionInsert = `@${candidate.label} `;
 
-    setInput(beforeMention + mentionInsert + afterMention);
+    const newValue = beforeMention + mentionInsert + afterMention;
+    setInput(newValue);
+    setValue("content", newValue, { shouldValidate: false });
     setMentionState({
       isActive: false,
       filterText: "",
@@ -108,6 +112,7 @@ export function MessageInput({
 
   const onFormSubmit = (data: SendMessageInput) => {
     onSubmit(data.content);
+    setInput("");
     reset();
   };
 

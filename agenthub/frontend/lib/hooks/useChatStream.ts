@@ -40,8 +40,11 @@ export function useChatStream(
   const connectionRef = useRef<ReturnType<typeof createSSEConnection> | null>(
     null,
   );
+  const streamingMessageIdsRef = useRef<Set<string>>(new Set());
 
   const addMessage = useMessageStore((s) => s.addMessage);
+  const upsertMessage = useMessageStore((s) => s.upsertMessage);
+  const appendStreamChunk = useMessageStore((s) => s.appendStreamChunk);
   const setStreaming = useMessageStore((s) => s.setStreaming);
   const addTask = useTaskStore((s) => s.addTask);
   const updateTaskStatus = useTaskStore((s) => s.updateTaskStatus);
@@ -92,10 +95,18 @@ export function useChatStream(
 
       // 建立 SSE 连接接收 agent 回复
       console.log("[DEBUG] Creating SSE connection for agent responses...");
+      // 清除上一次的流式消息 ID 记录
+      streamingMessageIdsRef.current.clear();
+
       const conn = createSSEConnection({
         baseUrl,
         onMessage: (data) => {
-          console.log("[DEBUG] SSE onMessage:", JSON.stringify(data));
+          console.log(
+            "[DEBUG] SSE onMessage called! data keys:",
+            Object.keys(data),
+            "content preview:",
+            (data.content || "").substring(0, 50),
+          );
           const normalizedMessage: Message = {
             id: data.id || `msg-${Date.now()}`,
             sender: data.sender || data.role || "unknown",
@@ -109,10 +120,34 @@ export function useChatStream(
             role: data.role,
           };
           console.log(
-            "[DEBUG] Adding message from SSE:",
+            "[DEBUG] Upserting message from SSE:",
             JSON.stringify(normalizedMessage),
           );
-          addMessage(normalizedMessage);
+          // 使用 upsert：流式消息已存在则更新，否则添加
+          upsertMessage(normalizedMessage);
+          streamingMessageIdsRef.current.delete(normalizedMessage.id);
+        },
+        onStreamChunk: (data) => {
+          console.log(
+            "[DEBUG] SSE onStreamChunk:",
+            data.message_id,
+            data.chunk?.substring(0, 30),
+          );
+          if (!streamingMessageIdsRef.current.has(data.message_id)) {
+            // 第一个 chunk，创建占位消息
+            streamingMessageIdsRef.current.add(data.message_id);
+            addMessage({
+              id: data.message_id,
+              sender: "agent",
+              sender_name: "Agent",
+              content: data.chunk || "",
+              timestamp: Math.floor(Date.now() / 1000),
+              type: "agent",
+            });
+          } else {
+            // 后续 chunk，追加内容
+            appendStreamChunk(data.message_id, data.chunk || "");
+          }
         },
         onTermination: (_keyword) => {
           console.log("[DEBUG] SSE onTermination");
@@ -165,7 +200,23 @@ export function useChatStream(
       connectionRef.current = conn;
 
       try {
-        console.log("[DEBUG] Calling API sendMessage:", content);
+        // 等待 SSE 连接建立后再发 POST，避免事件在连接建立前被发送而丢失
+        console.log("[DEBUG] Waiting for SSE connection to be ready...");
+        const readyTimeout = new Promise<boolean>((r) =>
+          setTimeout(() => r(false), 5000),
+        );
+        const isReady = await Promise.race([
+          conn.ready.then(() => true),
+          readyTimeout,
+        ]);
+        if (!isReady) {
+          console.warn("[DEBUG] SSE connection timed out, sending POST anyway");
+        } else {
+          console.log(
+            "[DEBUG] SSE connection ready, calling API sendMessage:",
+            content,
+          );
+        }
         const result = await api.sendMessage(content, agentId);
         console.log("[DEBUG] API sendMessage result:", JSON.stringify(result));
         if (!result.success) {
@@ -183,6 +234,8 @@ export function useChatStream(
       agentId,
       baseUrl,
       addMessage,
+      upsertMessage,
+      appendStreamChunk,
       setStreaming,
       disconnect,
       addTask,

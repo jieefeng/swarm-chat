@@ -20,7 +20,7 @@ export function PreviewToolbar({
   return (
     <div className="flex items-center justify-between bg-gray-50 px-3 py-2 border-b border-gray-200">
       <div className="flex items-center gap-2">
-        <span className="text-gray-400">{String.fromCodePoint(0x1F5A5) + String.fromCodePoint(0xFE0F)}</span>
+        <span className="text-gray-400">🖥️</span>
         <span className="text-sm font-medium text-gray-700 truncate max-w-[200px]">
           {title}
         </span>
@@ -33,7 +33,7 @@ export function PreviewToolbar({
           title={isCollapsed ? "expand" : "collapse"}
         >
           <svg
-            className={"w-4 h-4 transition-transform " + (isCollapsed ? "-rotate-90" : "")}
+            className={`w-4 h-4 transition-transform ${isCollapsed ? "-rotate-90" : ""}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"

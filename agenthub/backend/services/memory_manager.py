@@ -44,7 +44,7 @@ class MemoryManager:
         Returns:
             格式化的上下文字符串
         """
-        recent = await self.get_messages(limit=limit)
+        recent = await self.get_messages(user_id=user_id, limit=limit)
         context_parts = []
         for msg in recent:
             role = msg.get('role', 'unknown')
@@ -74,7 +74,7 @@ class RedisMemoryManager:
     def __init__(self, redis_url: str = "redis://localhost:6379",
                  max_messages: int = 1000, ttl_days: int = 30):
         import redis.asyncio as aioredis
-        self.redis = aioredis.from_url(redis_url, decode_responses=True)
+        self.redis = aioredis.from_url(redis_url, decode_responses=True, protocol=2)
         self.max_messages = max_messages
         self.ttl_seconds = ttl_days * 86400
 
@@ -134,7 +134,7 @@ def create_memory_manager():
         try:
             # Test connection synchronously (from_url is lazy, won't fail at construction)
             import redis as sync_redis
-            client = sync_redis.from_url(redis_url)
+            client = sync_redis.from_url(redis_url, protocol=2)
             client.ping()
             client.close()
             manager = RedisMemoryManager(

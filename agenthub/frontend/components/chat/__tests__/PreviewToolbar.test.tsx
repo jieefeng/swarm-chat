@@ -83,7 +83,7 @@ describe('PreviewToolbar', () => {
   });
 
   it('applies rotation class when collapsed', () => {
-    const { container } = render(
+    render(
       <PreviewToolbar
         title="Preview"
         isCollapsed={true}

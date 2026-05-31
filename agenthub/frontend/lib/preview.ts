@@ -36,7 +36,7 @@ export function processHtml(htmlCode: string): string {
 
   if (!html.includes("Content-Security-Policy")) {
     html = html.replace(/<head>/i,
-      `<head><meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https:">`
+      `<head><meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' https:">`
     );
   }
 

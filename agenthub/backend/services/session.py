@@ -1,5 +1,5 @@
 """会话服务 - Agent配置和会话管理"""
-from typing import Dict, Optional
+from typing import Dict, Iterator, Optional
 
 
 # Agent配置
@@ -149,6 +149,35 @@ class SessionManager:
         except Exception as e:
             return f"Error: {str(e)}"
 
+    def send_to_agent_stream(self, agent_id: str, message: str) -> Iterator[str]:
+        """流式发送消息到指定Agent，逐个 yield 文本片段
+
+        Args:
+            agent_id: Agent ID
+            message: 消息内容
+
+        Yields:
+            LLM 响应的文本片段
+        """
+        from .llm_router import get_llm_service
+
+        config = AGENT_CONFIGS.get(agent_id)
+        if not config:
+            yield f"Error: Unknown agent {agent_id}"
+            return
+
+        system_prompt = config.get("system_prompt", "")
+        session_id = f"session_{agent_id}"
+
+        try:
+            llm = get_llm_service()
+            yield from llm.send_message_stream(
+                session_id=session_id,
+                message=message,
+                system_prompt=system_prompt
+            )
+        except Exception as e:
+            yield f"Error: {str(e)}"
 
 # 全局会话管理器
 session_manager = SessionManager()

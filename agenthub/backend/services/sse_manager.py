@@ -13,7 +13,7 @@ class SSEManager:
         self.subscribers: Set[asyncio.Queue] = set()
         self._lock = threading.Lock()
 
-    async def subscribe(self) -> AsyncGenerator[str, None]:
+    async def subscribe(self) -> AsyncGenerator[dict, None]:
         """订阅SSE事件流"""
         queue: asyncio.Queue = asyncio.Queue()
         with self._lock:
@@ -24,25 +24,30 @@ class SSEManager:
             while True:
                 try:
                     event = await asyncio.wait_for(queue.get(), timeout=30)
-                    print(f"[SSE SUBSCRIBE] Got event from queue: {event[:100]}...")
+                    print(f"[SSE SUBSCRIBE] Got event from queue: {str(event)[:100]}...")
                     yield event
                 except asyncio.TimeoutError:
-                    yield "keepalive: ping\n\n"
+                    yield {"event": "keepalive", "data": json.dumps({"status": "ping"})}
         finally:
             with self._lock:
                 self.subscribers.remove(queue)
             print(f"[SSE SUBSCRIBE] Subscriber removed. Total: {len(self.subscribers)}")
 
     async def broadcast(self, event_type: str, data: dict):
-        """广播事件到所有订阅者"""
-        message = f"event: {event_type}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
-        print(f"[SSE BROADCAST] type={event_type}, data={json.dumps(data, ensure_ascii=False)[:200]}")
+        """广播事件到所有订阅者
+
+        data 会被 JSON 序列化为 string，确保 sse-starlette 正确格式化。
+        """
+        data_str = json.dumps(data, ensure_ascii=False)
+        print(f"[SSE BROADCAST] type={event_type}, data={data_str[:200]}")
+        event = {"event": event_type, "data": data_str}
         with self._lock:
             for queue in self.subscribers:
-                await queue.put(message)
+                await queue.put(event)
 
     async def broadcast_stream_chunk(self, message_id: str, chunk: str, seq: int) -> None:
         """广播流式文本片段"""
+        print(f"[SSE STREAM_CHUNK] Broadcasting chunk #{seq} for message_id={message_id}, chunk={repr(chunk[:50])}")
         await self.broadcast("stream_chunk", {
             "message_id": message_id,
             "chunk": chunk,
