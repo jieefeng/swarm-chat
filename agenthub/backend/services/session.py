@@ -1,5 +1,5 @@
 """会话服务 - Agent配置和会话管理"""
-from typing import Dict, Optional
+from typing import Dict, Iterator, Optional
 
 
 # Agent配置
@@ -60,7 +60,27 @@ AGENT_CONFIGS: Dict[str, Dict[str, str]] = {
     "developer": {
         "name": "开发者",
         "role": "developer",
-        "system_prompt": "你是一位资深全栈开发者。根据架构师的设计方案，编写高质量的代码实现。遵循 SOLID 原则，编写清晰、可维护的代码。输出代码时使用 markdown 代码块，标明文件路径和语言。"
+        "system_prompt": """你是一位资深全栈开发者。根据架构师的设计方案，编写高质量的代码实现。遵循 SOLID 原则，编写清晰、可维护的代码。输出代码时使用 markdown 代码块，标明文件路径和语言。
+
+## 网页预览规则
+
+当用户要求预览网页或生成前端代码时，必须遵循：
+
+1. **自包含原则**：代码必须在 iframe 中独立运行
+   - 所有依赖通过 CDN 引入（React，Vue，TailwindCSS 等）
+   - 示例：通过 CDN 引入所需依赖
+
+2. **模拟数据**：API 调用必须模拟
+   - 使用 mock 函数模拟后端响应
+   - 提供测试数据和提示信息
+
+3. **标准格式**：使用 markdown 代码块，标明 html 语言
+
+4. **用户体验**：
+   - 页面必须有基本样式
+   - 交互必须有反馈（loading，error，success）
+   - 提供操作提示（如测试账号提示）
+"""
     },
     "qa": {
         "name": "QA工程师",
@@ -129,6 +149,35 @@ class SessionManager:
         except Exception as e:
             return f"Error: {str(e)}"
 
+    def send_to_agent_stream(self, agent_id: str, message: str) -> Iterator[str]:
+        """流式发送消息到指定Agent，逐个 yield 文本片段
+
+        Args:
+            agent_id: Agent ID
+            message: 消息内容
+
+        Yields:
+            LLM 响应的文本片段
+        """
+        from .llm_router import get_llm_service
+
+        config = AGENT_CONFIGS.get(agent_id)
+        if not config:
+            yield f"Error: Unknown agent {agent_id}"
+            return
+
+        system_prompt = config.get("system_prompt", "")
+        session_id = f"session_{agent_id}"
+
+        try:
+            llm = get_llm_service()
+            yield from llm.send_message_stream(
+                session_id=session_id,
+                message=message,
+                system_prompt=system_prompt
+            )
+        except Exception as e:
+            yield f"Error: {str(e)}"
 
 # 全局会话管理器
 session_manager = SessionManager()

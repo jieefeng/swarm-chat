@@ -1,8 +1,8 @@
 """TaskManager 测试"""
 import pytest
 from unittest.mock import AsyncMock, patch
-from models.task import Task, TaskCreate, TaskStatus, OrchestratorOutput
-from services.task_manager import TaskManager
+from agenthub.backend.models.task import Task, TaskCreate, TaskStatus, OrchestratorOutput
+from agenthub.backend.services.task_manager import TaskManager
 
 
 def test_add_tasks_from_orchestrator():

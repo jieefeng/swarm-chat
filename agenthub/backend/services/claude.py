@@ -1,6 +1,7 @@
 """Claude API服务 - 带有重试机制"""
 import os
 import asyncio
+from collections.abc import Generator
 from typing import Optional
 from anthropic import Anthropic
 
@@ -85,6 +86,28 @@ class ClaudeService:
             ]
         )
         return response.content[0].text
+
+    def send_message_stream(
+        self,
+        session_id: str,
+        message: str,
+        system_prompt: str = ""
+    ) -> Generator[str, None, None]:
+        """流式发送消息到Claude API，逐个 yield 文本片段
+
+        Yields:
+            LLM 响应的文本片段
+        """
+        with self.client.messages.stream(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1024,
+            system=system_prompt,
+            messages=[
+                {"role": "user", "content": message}
+            ]
+        ) as stream:
+            for text in stream.text_stream:
+                yield text
 
 
 # 全局Claude服务实例

@@ -19,7 +19,7 @@ from agenthub.backend.services.sse_manager import sse_manager
 
 
 API_KEY = os.getenv("API_KEY", "dev-secret-key")
-PORT = int(os.getenv("PORT", "7000"))
+PORT = int(os.getenv("PORT", "7010"))
 
 
 @asynccontextmanager
@@ -39,9 +39,17 @@ app = FastAPI(
 
 
 # CORS中间件
+# 注意: allow_origins=["*"] + allow_credentials=True 违反 CORS 规范
+# 浏览器会拒绝 credentials: "include" 的请求（如 SSE fetch）
+# 必须列出具体 origin
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:7000",
+        "http://localhost:7005",
+        "http://127.0.0.1:7000",
+        "http://127.0.0.1:7005",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
