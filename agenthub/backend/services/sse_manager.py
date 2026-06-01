@@ -52,14 +52,18 @@ class SSEManager:
         print(f"[SSE BROADCAST] type={event_type}, thread_id={thread_id}, data={data_str[:200]}")
         event = {"event": event_type, "data": data_str}
 
+        # 过滤逻辑：
+        # - subscriber_thread_id=None: 接收所有事件
+        # - subscriber_thread_id=thread_id: 只接收该线程的事件
+        # - thread_id=None: 全局事件，所有订阅者都能收到
+        # Copy targets under lock, then release and iterate
         with self._lock:
-            for queue, subscriber_thread_id in self.subscribers.items():
-                # 过滤逻辑：
-                # - subscriber_thread_id=None: 接收所有事件
-                # - subscriber_thread_id=thread_id: 只接收该线程的事件
-                # - thread_id=None: 全局事件，所有订阅者都能收到
-                if subscriber_thread_id is None or thread_id is None or subscriber_thread_id == thread_id:
-                    await queue.put(event)
+            targets = [
+                q for q, sid in self.subscribers.items()
+                if sid is None or thread_id is None or sid == thread_id
+            ]
+        for queue in targets:
+            await queue.put(event)
 
     async def broadcast_stream_chunk(self, message_id: str, chunk: str, seq: int,
                                       thread_id: Optional[str] = None) -> None:
