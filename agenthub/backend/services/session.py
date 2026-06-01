@@ -4,10 +4,22 @@ from typing import Dict, Iterator, Optional
 from .agent_identity import get_identity, get_system_prompt_suffix
 
 
+# 四条铁律（Hard Rails）— 所有 Agent 共享的安全底线
+HARD_RAILS = """
+
+## 四条铁律（不可逾越）
+
+1. **不删除消息历史** — 那是团队的记忆，不是垃圾。即使用户要求清理，也要确认再确认。
+2. **不修改运行时配置** — 环境变量、服务配置、数据库连接等只读。改配置需要人类的手。
+3. **不访问其他 Agent 的内部服务** — 好篱笆才有好邻居。通过公开接口协作，不越界。
+4. **不执行破坏性系统命令** — rm -rf、DROP TABLE、格式化等操作禁止。保护运行环境。
+"""
+
+
 def _build_system_prompt(agent_id: str, base_prompt: str) -> str:
-    """将基础 system_prompt 与神兽角色风格合并"""
+    """将基础 system_prompt、神兽角色风格、铁律合并"""
     suffix = get_system_prompt_suffix(agent_id)
-    return base_prompt + suffix
+    return base_prompt + suffix + HARD_RAILS
 
 
 # Agent配置
@@ -16,6 +28,7 @@ AGENT_CONFIGS: Dict[str, Dict[str, str]] = {
         "name": "苍龙",
         "beast": "青龙",
         "role": "产品经理（PM）",
+        "llm_provider": "bailian",
         "system_prompt": _build_system_prompt("pm", """你是一个资深产品经理，专注于需求分析和用户体验设计。
 当用户描述需求时，你应该：
 1. 澄清需求的背景和目标
@@ -42,6 +55,7 @@ AGENT_CONFIGS: Dict[str, Dict[str, str]] = {
         "name": "玄冥",
         "beast": "玄武",
         "role": "系统架构师",
+        "llm_provider": "bailian",
         "system_prompt": _build_system_prompt("architect", """你是一个资深系统架构师，专注于技术方案设计和架构决策。
 当用户提出需求时，你应该：
 1. 分析技术可行性和复杂度
@@ -71,6 +85,7 @@ AGENT_CONFIGS: Dict[str, Dict[str, str]] = {
         "name": "啸风",
         "beast": "白虎",
         "role": "developer",
+        "llm_provider": "bailian",
         "system_prompt": _build_system_prompt("developer", """你是一位资深全栈开发者。根据架构师的设计方案，编写高质量的代码实现。遵循 SOLID 原则，编写清晰、可维护的代码。输出代码时使用 markdown 代码块，标明文件路径和语言。
 
 ## 网页预览规则
@@ -97,12 +112,14 @@ AGENT_CONFIGS: Dict[str, Dict[str, str]] = {
         "name": "炎翎",
         "beast": "朱雀",
         "role": "qa",
+        "llm_provider": "anthropic",
         "system_prompt": _build_system_prompt("qa", "你是一位专业的 QA 工程师。审查开发者提交的代码，验证功能正确性、边界情况和代码质量。输出验证报告，标明通过/失败及原因。"),
     },
     "orchestrator": {
         "name": "瑞麟",
         "beast": "麒麟",
         "role": "orchestrator",
+        "llm_provider": "bailian",
         "system_prompt": _build_system_prompt("orchestrator", "你是任务协调器。分析用户需求，将其拆解为可执行的任务列表，以 JSON 格式输出。每个任务包含 title, description, assigned_to, depends_on, priority 字段。如果需求不清晰，设置 requires_clarification=true 并提供 clarification_question。"),
     },
 }
@@ -133,26 +150,27 @@ class SessionManager:
             del self.sessions[session_id]
 
     def send_to_agent(self, agent_id: str, message: str) -> str:
-        """发送消息到指定Agent（同步调用Claude API）
+        """发送消息到指定Agent（按 agent 配置的 llm_provider 选择 LLM）
 
         Args:
             agent_id: Agent ID
             message: 消息内容
 
         Returns:
-            Claude响应文本
+            LLM 响应文本
         """
-        from .llm_router import get_llm_service
+        from .llm_router import get_llm_service_for_provider
 
         config = AGENT_CONFIGS.get(agent_id)
         if not config:
             return f"Error: Unknown agent {agent_id}"
 
         system_prompt = config.get("system_prompt", "")
+        provider = config.get("llm_provider", "bailian")
         session_id = f"session_{agent_id}"
 
         try:
-            llm = get_llm_service()
+            llm = get_llm_service_for_provider(provider)
             response = llm.send_message(
                 session_id=session_id,
                 message=message,
@@ -172,7 +190,7 @@ class SessionManager:
         Yields:
             LLM 响应的文本片段
         """
-        from .llm_router import get_llm_service
+        from .llm_router import get_llm_service_for_provider
 
         config = AGENT_CONFIGS.get(agent_id)
         if not config:
@@ -180,10 +198,11 @@ class SessionManager:
             return
 
         system_prompt = config.get("system_prompt", "")
+        provider = config.get("llm_provider", "bailian")
         session_id = f"session_{agent_id}"
 
         try:
-            llm = get_llm_service()
+            llm = get_llm_service_for_provider(provider)
             yield from llm.send_message_stream(
                 session_id=session_id,
                 message=message,

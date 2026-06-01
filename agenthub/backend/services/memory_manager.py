@@ -5,13 +5,20 @@ from datetime import datetime
 
 
 class MemoryManager:
-    """管理对话消息历史"""
+    """管理对话消息历史（按线程隔离）"""
 
     def __init__(self, max_messages: int = 1000):
-        self.messages: List[Dict] = []
+        self._threads: Dict[str, List[Dict]] = {}  # thread_id -> messages
         self.max_messages = max_messages
 
-    async def add_message(self, role: str, content: str, user_id: str = "default", agent_id: Optional[str] = None, sender_name: Optional[str] = None) -> Dict:
+    def _get_thread(self, thread_id: str) -> List[Dict]:
+        if thread_id not in self._threads:
+            self._threads[thread_id] = []
+        return self._threads[thread_id]
+
+    async def add_message(self, role: str, content: str, user_id: str = "default",
+                          agent_id: Optional[str] = None, sender_name: Optional[str] = None,
+                          thread_id: str = "default") -> Dict:
         """添加消息到历史，返回消息字典（含id）"""
         message = {
             "id": f"msg_{uuid.uuid4().hex[:8]}",
@@ -21,40 +28,39 @@ class MemoryManager:
             "sender_name": sender_name or role,
             "timestamp": int(datetime.now().timestamp()),
             "type": "user" if role == "user" else "agent",
+            "thread_id": thread_id,
         }
-        self.messages.append(message)
+        thread = self._get_thread(thread_id)
+        thread.append(message)
 
-        # 保持消息数量在限制内
-        if len(self.messages) > self.max_messages:
-            self.messages = self.messages[-self.max_messages:]
+        if len(thread) > self.max_messages:
+            self._threads[thread_id] = thread[-self.max_messages:]
 
         return message
 
-    async def get_messages(self, user_id: str = "default", limit: int = 50) -> List[Dict]:
+    async def get_messages(self, user_id: str = "default", limit: int = 50,
+                           thread_id: str = "default") -> List[Dict]:
         """获取最近的消息"""
-        return self.messages[-limit:] if limit > 0 else self.messages
+        thread = self._get_thread(thread_id)
+        return thread[-limit:] if limit > 0 else thread
 
-    async def get_context_for_agent(self, agent_id: str, user_id: str = "default", limit: int = 10) -> str:
-        """获取指定Agent的上下文
-
-        Args:
-            agent_id: Agent ID
-            limit: 返回消息条数
-
-        Returns:
-            格式化的上下文字符串
-        """
-        recent = await self.get_messages(user_id=user_id, limit=limit)
+    async def get_context_for_agent(self, agent_id: str, user_id: str = "default",
+                                    limit: int = 10, thread_id: str = "default") -> str:
+        """获取指定Agent的上下文"""
+        recent = await self.get_messages(user_id=user_id, limit=limit, thread_id=thread_id)
         context_parts = []
         for msg in recent:
             role = msg.get('role', 'unknown')
-            content = msg.get('content', '')[:200]  # 截断到200字符
+            content = msg.get('content', '')[:200]
             context_parts.append(f"[{role}]: {content}")
         return "\n".join(context_parts)
 
-    async def clear(self, user_id: str = "default"):
-        """清空消息历史"""
-        self.messages.clear()
+    async def clear(self, user_id: str = "default", thread_id: Optional[str] = None):
+        """清空消息历史。thread_id 为 None 时清空所有线程。"""
+        if thread_id is not None:
+            self._threads.pop(thread_id, None)
+        else:
+            self._threads.clear()
 
 
 # 全局内存管理器实例
@@ -69,7 +75,7 @@ logger = logging.getLogger(__name__)
 
 
 class RedisMemoryManager:
-    """基于 Redis List 的消息存储管理器"""
+    """基于 Redis List 的消息存储管理器（按线程隔离）"""
 
     def __init__(self, redis_url: str = "redis://localhost:6379",
                  max_messages: int = 1000, ttl_days: int = 30):
@@ -78,13 +84,14 @@ class RedisMemoryManager:
         self.max_messages = max_messages
         self.ttl_seconds = ttl_days * 86400
 
-    def _key(self, user_id: str) -> str:
-        return f"chat:messages:{user_id}"
+    def _key(self, user_id: str, thread_id: str = "default") -> str:
+        return f"chat:messages:{user_id}:{thread_id}"
 
     async def add_message(self, role: str, content: str,
                           user_id: str = "default",
                           agent_id: Optional[str] = None,
-                          sender_name: Optional[str] = None) -> Dict:
+                          sender_name: Optional[str] = None,
+                          thread_id: str = "default") -> Dict:
         message = {
             "id": f"msg_{uuid.uuid4().hex[:8]}",
             "role": role,
@@ -93,23 +100,26 @@ class RedisMemoryManager:
             "sender_name": sender_name or role,
             "timestamp": int(datetime.now().timestamp()),
             "type": "user" if role == "user" else "agent",
+            "thread_id": thread_id,
         }
-        key = self._key(user_id)
+        key = self._key(user_id, thread_id)
         await self.redis.lpush(key, json.dumps(message, ensure_ascii=False))
         await self.redis.ltrim(key, 0, self.max_messages - 1)
         await self.redis.expire(key, self.ttl_seconds)
         return message
 
     async def get_messages(self, user_id: str = "default",
-                           limit: int = 50) -> List[Dict]:
-        key = self._key(user_id)
+                           limit: int = 50,
+                           thread_id: str = "default") -> List[Dict]:
+        key = self._key(user_id, thread_id)
         raw = await self.redis.lrange(key, 0, limit - 1)
         return [json.loads(item) for item in reversed(raw)]
 
     async def get_context_for_agent(self, agent_id: str,
                                      user_id: str = "default",
-                                     limit: int = 10) -> str:
-        recent = await self.get_messages(user_id=user_id, limit=limit)
+                                     limit: int = 10,
+                                     thread_id: str = "default") -> str:
+        recent = await self.get_messages(user_id=user_id, limit=limit, thread_id=thread_id)
         context_parts = []
         for msg in recent:
             role = msg.get("role", "unknown")
@@ -117,8 +127,14 @@ class RedisMemoryManager:
             context_parts.append(f"[{role}]: {content}")
         return "\n".join(context_parts)
 
-    async def clear(self, user_id: str = "default"):
-        await self.redis.delete(self._key(user_id))
+    async def clear(self, user_id: str = "default", thread_id: Optional[str] = None):
+        if thread_id is not None:
+            await self.redis.delete(self._key(user_id, thread_id))
+        else:
+            # 清空用户所有线程
+            pattern = f"chat:messages:{user_id}:*"
+            async for key in self.redis.scan_iter(match=pattern):
+                await self.redis.delete(key)
 
     async def close(self):
         await self.redis.close()
