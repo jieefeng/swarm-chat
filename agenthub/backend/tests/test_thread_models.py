@@ -1,17 +1,32 @@
 """Thread 模型测试"""
 import pytest
-from agenthub.backend.models.thread import Thread, ThreadMessage
+from datetime import timezone
+
+from agenthub.backend.models.thread import Thread, ThreadMessage, ThreadStatus
 
 
 def test_thread_default_values():
     """测试 Thread 默认值"""
     thread = Thread(title="测试线程")
     assert thread.title == "测试线程"
-    assert thread.status == "active"
+    assert thread.status == ThreadStatus.ACTIVE
     assert thread.participants == []
     assert thread.created_by == "user"
     assert thread.id is not None
-    assert len(thread.id) == 12
+    assert len(thread.id) == 36  # full UUID format
+
+
+def test_thread_default_times_are_utc():
+    """测试默认时间为 UTC"""
+    thread = Thread(title="测试线程")
+    assert thread.created_at.tzinfo == timezone.utc
+    assert thread.updated_at.tzinfo == timezone.utc
+
+
+def test_thread_status_enum():
+    """测试 ThreadStatus 枚举值"""
+    assert ThreadStatus.ACTIVE == "active"
+    assert ThreadStatus.ARCHIVED == "archived"
 
 
 def test_thread_message_default_values():
@@ -26,6 +41,8 @@ def test_thread_message_default_values():
     assert msg.mentions == []
     assert msg.reply_to is None
     assert msg.id is not None
+    assert len(msg.id) == 36  # full UUID format
+    assert msg.created_at.tzinfo == timezone.utc
 
 
 def test_thread_message_with_mentions():

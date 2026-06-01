@@ -1,7 +1,15 @@
 """线程相关数据模型"""
+from enum import Enum
+
+from datetime import datetime, timezone
 from pydantic import BaseModel, Field
-from datetime import datetime
 import uuid
+
+
+class ThreadStatus(str, Enum):
+    """线程状态枚举"""
+    ACTIVE = "active"
+    ARCHIVED = "archived"
 
 
 class Thread(BaseModel):
@@ -19,14 +27,14 @@ class Thread(BaseModel):
         created_at: 创建时间
         updated_at: 更新时间
     """
-    id: str = Field(default_factory=lambda: uuid.uuid4().hex[:12])
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     title: str
     description: str | None = None
     created_by: str = "user"
     participants: list[str] = Field(default_factory=list)
-    status: str = "active"
-    created_at: datetime = Field(default_factory=datetime.now)
-    updated_at: datetime = Field(default_factory=datetime.now)
+    status: ThreadStatus = ThreadStatus.ACTIVE
+    created_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
 
 
 class ThreadMessage(BaseModel):
@@ -41,13 +49,13 @@ class ThreadMessage(BaseModel):
         reply_to: 回复的消息 ID (可选)
         created_at: 创建时间
     """
-    id: str = Field(default_factory=lambda: uuid.uuid4().hex[:12])
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     thread_id: str
     sender_id: str
     content: str
     mentions: list[str] = Field(default_factory=list)
     reply_to: str | None = None
-    created_at: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
 
 
 class CreateThreadRequest(BaseModel):
