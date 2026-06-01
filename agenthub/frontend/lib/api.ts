@@ -9,7 +9,10 @@ const headers = {
 };
 
 export const api = {
-  async sendMessage(content: string): Promise<SendMessageResponse> {
+  async sendMessage(
+    content: string,
+    threadId?: string | null,
+  ): Promise<SendMessageResponse> {
     const res = await fetch(`${API_BASE}/api/messages`, {
       method: "POST",
       headers,
@@ -17,6 +20,7 @@ export const api = {
         content,
         sender: "user",
         sender_name: "用户",
+        ...(threadId ? { thread_id: threadId } : {}),
       }),
     });
     if (!res.ok) {

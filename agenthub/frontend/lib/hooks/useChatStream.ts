@@ -15,6 +15,7 @@ import type {
 interface UseChatStreamOptions {
   agentId: string | null;
   baseUrl: string;
+  threadId?: string | null;
 }
 
 interface UseChatStreamReturn {
@@ -32,7 +33,7 @@ interface UseChatStreamReturn {
 export function useChatStream(
   options: UseChatStreamOptions,
 ): UseChatStreamReturn {
-  const { agentId, baseUrl } = options;
+  const { agentId, baseUrl, threadId } = options;
   const [connectionState, setConnectionState] = useState<
     "idle" | "connecting" | "connected" | "reconnecting" | "error"
   >("idle");
@@ -100,6 +101,7 @@ export function useChatStream(
 
       const conn = createSSEConnection({
         baseUrl,
+        threadId,
         onMessage: (data) => {
           console.log(
             "[DEBUG] SSE onMessage called! data keys:",
@@ -217,7 +219,7 @@ export function useChatStream(
             content,
           );
         }
-        const result = await api.sendMessage(content, agentId);
+        const result = await api.sendMessage(content, threadId);
         console.log("[DEBUG] API sendMessage result:", JSON.stringify(result));
         if (!result.success) {
           throw new Error("发送消息失败");
@@ -233,6 +235,7 @@ export function useChatStream(
     [
       agentId,
       baseUrl,
+      threadId,
       addMessage,
       upsertMessage,
       appendStreamChunk,

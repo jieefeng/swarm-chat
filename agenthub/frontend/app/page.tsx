@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { AgentList } from "@/components/agents/AgentList";
 import { MessageInput } from "@/components/chat/MessageInput";
 import { MessageList } from "@/components/chat/MessageList";
+import { ThreadList } from "@/components/threads/ThreadList";
 import { api } from "@/lib/api";
 import { useChatStream } from "@/lib/hooks/useChatStream";
 import { useAgentStore } from "@/lib/stores/agentStore";
@@ -12,13 +13,25 @@ import { useMessageStore } from "@/lib/stores/messageStore";
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:7005";
 
 export default function HomePage() {
+  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const agents = useAgentStore((s) => s.agents);
   const setAgents = useAgentStore((s) => s.setAgents);
   const messages = useMessageStore((s) => s.messages);
   const { sendMessage, connectionState, lastError } = useChatStream({
     agentId: null,
     baseUrl: API_BASE,
+    threadId: activeThreadId,
   });
+
+  const handleCreateThread = async (title: string, description?: string) => {
+    const response = await fetch("/api/threads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, description }),
+    });
+    const thread = await response.json();
+    setActiveThreadId(thread.id);
+  };
 
   useEffect(() => {
     // 加载初始数据
@@ -56,6 +69,15 @@ export default function HomePage() {
 
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
+        {/* 左侧线程列表 */}
+        <div className="w-64 border-r border-gray-200 bg-gray-50">
+          <ThreadList
+            activeThreadId={activeThreadId}
+            onSelectThread={setActiveThreadId}
+            onCreateThread={handleCreateThread}
+          />
+        </div>
+
         <AgentList agents={agents} />
         <div className="flex-1 flex flex-col">
           <MessageList messages={messages} agentId={null} />

@@ -32,6 +32,7 @@ export interface SSEMessage {
 
 export interface SSEConnectionOptions {
   baseUrl: string;
+  threadId?: string | null;
   onMessage: (data: SSEMessage) => void;
   onTermination: (keyword: string) => void;
   onError: (error: string) => void;
@@ -79,8 +80,11 @@ export function createSSEConnection(options: SSEConnectionOptions) {
   const connect = async () => {
     if (aborted) return;
     try {
-      console.log("[SSE] Connecting to:", `${options.baseUrl}/api/events`);
-      const response = await fetch(`${options.baseUrl}/api/events`, {
+      const eventsUrl = options.threadId
+        ? `${options.baseUrl}/api/events?thread_id=${encodeURIComponent(options.threadId)}`
+        : `${options.baseUrl}/api/events`;
+      console.log("[SSE] Connecting to:", eventsUrl);
+      const response = await fetch(eventsUrl, {
         headers: {
           "Content-Type": "application/json",
           "X-API-Key": API_KEY,
