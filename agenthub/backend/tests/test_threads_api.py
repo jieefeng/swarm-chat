@@ -1,5 +1,6 @@
 """线程 API 集成测试"""
 import pytest
+from unittest.mock import AsyncMock, patch
 from httpx import AsyncClient, ASGITransport
 import sys
 import os
@@ -7,6 +8,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 
 from agenthub.backend.main import app
+from agenthub.backend.models.task import OrchestratorOutput, TaskCreate
 
 API_KEY = "dev-secret-key"
 HEADERS = {"X-API-Key": API_KEY}
@@ -17,6 +19,31 @@ async def client():
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
+
+
+@pytest.fixture(autouse=True)
+def mock_deliver_to_agent():
+    """Mock a2a_router.deliver_to_agent to prevent real LLM API calls in tests."""
+    with patch(
+        "agenthub.backend.routers.threads.a2a_router.deliver_to_agent",
+        new_callable=AsyncMock,
+    ) as mock:
+        yield mock
+
+
+@pytest.fixture(autouse=True)
+def mock_orchestrator():
+    """Mock OrchestratorAgent.decompose to prevent real LLM calls during routing."""
+    mock_output = OrchestratorOutput(
+        analysis="测试分析",
+        tasks=[TaskCreate(title="测试任务", description="测试", assigned_to="pm")],
+    )
+    with patch(
+        "agenthub.backend.services.orchestrator.OrchestratorAgent.decompose",
+        new_callable=AsyncMock,
+        return_value=mock_output,
+    ) as mock:
+        yield mock
 
 
 @pytest.mark.asyncio
