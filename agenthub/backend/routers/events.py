@@ -1,4 +1,6 @@
 """SSE事件路由 - Server-Sent Events端点"""
+from typing import Optional
+
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from sse_starlette.sse import EventSourceResponse
@@ -8,14 +10,10 @@ router = APIRouter(prefix="/api", tags=["events"])
 
 
 @router.get("/events")
-async def events():
-    """SSE事件流端点
+async def events(thread_id: Optional[str] = None):
+    """SSE 事件流
 
-    建立SSE连接，订阅所有消息事件和终止事件。
-    客户端可通过EventSource API连接。
+    Args:
+        thread_id: 订阅指定线程的事件。不传则接收所有事件。
     """
-    async def event_generator():
-        async for event in sse_manager.subscribe():
-            yield event
-
-    return EventSourceResponse(event_generator())
+    return EventSourceResponse(sse_manager.subscribe(thread_id=thread_id))
