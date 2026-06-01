@@ -70,11 +70,12 @@ async def verify_api_key(request: Request, call_next):
 
 
 # 注册路由
-from agenthub.backend.routers import messages, events, tasks, agents
+from agenthub.backend.routers import messages, events, tasks, agents, threads
 app.include_router(messages.router)
 app.include_router(events.router)
 app.include_router(tasks.router)
 app.include_router(agents.router)
+app.include_router(threads.router)
 
 
 @app.get("/health")
