@@ -61,7 +61,8 @@ class TestSessionManager:
         """UT-S005: 获取Agent配置信息"""
         config = AGENT_CONFIGS.get("pm")
         assert config is not None
-        assert config["name"] == "产品经理"
+        assert config["name"] == "苍龙"
+        assert config["beast"] == "青龙"
         assert config["role"] == "产品经理（PM）"
 
     def test_create_session_default_agent(self, session_manager):
