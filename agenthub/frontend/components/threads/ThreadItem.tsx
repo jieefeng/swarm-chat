@@ -11,9 +11,19 @@ interface ThreadItemProps {
 }
 
 export function ThreadItem({ thread, isActive, onClick }: ThreadItemProps) {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onClick();
+    }
+  };
+
   return (
     <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
+      onKeyDown={handleKeyDown}
       className={`p-3 cursor-pointer border-b hover:bg-gray-50 ${
         isActive ? "bg-blue-50 border-l-4 border-l-blue-500" : ""
       }`}

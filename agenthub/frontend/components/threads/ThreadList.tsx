@@ -11,6 +11,8 @@ interface Thread {
   status: string;
   participants: string[];
   created_at: string;
+  created_by: string;
+  updated_at: string;
 }
 
 interface ThreadListProps {
@@ -22,15 +24,28 @@ interface ThreadListProps {
 export function ThreadList({ activeThreadId, onSelectThread, onCreateThread }: ThreadListProps) {
   const [threads, setThreads] = useState<Thread[]>([]);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchThreads();
   }, []);
 
   const fetchThreads = async () => {
-    const response = await fetch("/api/threads");
-    const data = await response.json();
-    setThreads(data.threads || []);
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/threads");
+      if (!response.ok) {
+        throw new Error(`获取线程列表失败 (${response.status})`);
+      }
+      const data = await response.json();
+      setThreads(data.threads || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "获取线程列表失败");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleCreate = async (title: string, description?: string) => {
@@ -52,7 +67,25 @@ export function ThreadList({ activeThreadId, onSelectThread, onCreateThread }: T
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {threads.map((thread) => (
+        {isLoading && (
+          <div className="p-4 text-center text-gray-500">
+            加载中...
+          </div>
+        )}
+
+        {error && (
+          <div className="p-4 text-center text-red-500">
+            {error}
+            <button
+              onClick={fetchThreads}
+              className="ml-2 text-blue-500 hover:underline"
+            >
+              重试
+            </button>
+          </div>
+        )}
+
+        {!isLoading && !error && threads.map((thread) => (
           <ThreadItem
             key={thread.id}
             thread={thread}
@@ -61,7 +94,7 @@ export function ThreadList({ activeThreadId, onSelectThread, onCreateThread }: T
           />
         ))}
 
-        {threads.length === 0 && (
+        {!isLoading && !error && threads.length === 0 && (
           <div className="p-4 text-center text-gray-500">
             暂无线程，点击"新建"创建
           </div>

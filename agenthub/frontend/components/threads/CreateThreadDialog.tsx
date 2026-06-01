@@ -11,6 +11,12 @@ export function CreateThreadDialog({ onSubmit, onCancel }: CreateThreadDialogPro
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape") {
+      onCancel();
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (title.trim()) {
@@ -19,14 +25,18 @@ export function CreateThreadDialog({ onSubmit, onCancel }: CreateThreadDialogPro
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      onKeyDown={handleKeyDown}
+    >
       <div className="bg-white rounded-lg p-6 w-96">
         <h3 className="text-lg font-semibold mb-4">创建新线程</h3>
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">标题</label>
+            <label htmlFor="thread-title" className="block text-sm font-medium mb-1">标题</label>
             <input
+              id="thread-title"
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -37,8 +47,9 @@ export function CreateThreadDialog({ onSubmit, onCancel }: CreateThreadDialogPro
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">描述（可选）</label>
+            <label htmlFor="thread-description" className="block text-sm font-medium mb-1">描述（可选）</label>
             <textarea
+              id="thread-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="简要描述这个线程的用途"
