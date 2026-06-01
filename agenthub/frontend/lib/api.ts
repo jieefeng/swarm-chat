@@ -37,4 +37,28 @@ export const api = {
     const res = await fetch(`${API_BASE}/api/agents`, { headers });
     return res.json();
   },
+
+  async getLLMConfig(): Promise<Record<string, { llm_provider: string }>> {
+    const res = await fetch(`${API_BASE}/api/agents/llm-config`, { headers });
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+    return res.json();
+  },
+
+  async updateLLMConfig(
+    agentId: string,
+    provider: string,
+  ): Promise<{ agent_id: string; llm_provider: string }> {
+    const res = await fetch(`${API_BASE}/api/agents/${agentId}/llm-config`, {
+      method: "PUT",
+      headers,
+      body: JSON.stringify({ llm_provider: provider }),
+    });
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.detail || `HTTP ${res.status}`);
+    }
+    return res.json();
+  },
 };
