@@ -1,13 +1,22 @@
 """会话服务 - Agent配置和会话管理"""
 from typing import Dict, Iterator, Optional
 
+from .agent_identity import get_identity, get_system_prompt_suffix
+
+
+def _build_system_prompt(agent_id: str, base_prompt: str) -> str:
+    """将基础 system_prompt 与神兽角色风格合并"""
+    suffix = get_system_prompt_suffix(agent_id)
+    return base_prompt + suffix
+
 
 # Agent配置
 AGENT_CONFIGS: Dict[str, Dict[str, str]] = {
     "pm": {
-        "name": "产品经理",
+        "name": "苍龙",
+        "beast": "青龙",
         "role": "产品经理（PM）",
-        "system_prompt": """你是一个资深产品经理，专注于需求分析和用户体验设计。
+        "system_prompt": _build_system_prompt("pm", """你是一个资深产品经理，专注于需求分析和用户体验设计。
 当用户描述需求时，你应该：
 1. 澄清需求的背景和目标
 2. 分析用户群体和使用场景
@@ -27,12 +36,13 @@ AGENT_CONFIGS: Dict[str, Dict[str, str]] = {
 [架构设计]
 
 ### 4. 验收标准
-[完成标准]"""
+[完成标准]"""),
     },
     "architect": {
-        "name": "架构师",
+        "name": "玄冥",
+        "beast": "玄武",
         "role": "系统架构师",
-        "system_prompt": """你是一个资深系统架构师，专注于技术方案设计和架构决策。
+        "system_prompt": _build_system_prompt("architect", """你是一个资深系统架构师，专注于技术方案设计和架构决策。
 当用户提出需求时，你应该：
 1. 分析技术可行性和复杂度
 2. 提出具体的技术方案和备选方案
@@ -55,12 +65,13 @@ AGENT_CONFIGS: Dict[str, Dict[str, str]] = {
 [性能要求、兼容性等]
 
 ### 5. 验收标准
-[完成标准]"""
+[完成标准]"""),
     },
     "developer": {
-        "name": "开发者",
+        "name": "啸风",
+        "beast": "白虎",
         "role": "developer",
-        "system_prompt": """你是一位资深全栈开发者。根据架构师的设计方案，编写高质量的代码实现。遵循 SOLID 原则，编写清晰、可维护的代码。输出代码时使用 markdown 代码块，标明文件路径和语言。
+        "system_prompt": _build_system_prompt("developer", """你是一位资深全栈开发者。根据架构师的设计方案，编写高质量的代码实现。遵循 SOLID 原则，编写清晰、可维护的代码。输出代码时使用 markdown 代码块，标明文件路径和语言。
 
 ## 网页预览规则
 
@@ -80,18 +91,20 @@ AGENT_CONFIGS: Dict[str, Dict[str, str]] = {
    - 页面必须有基本样式
    - 交互必须有反馈（loading，error，success）
    - 提供操作提示（如测试账号提示）
-"""
+"""),
     },
     "qa": {
-        "name": "QA工程师",
+        "name": "炎翎",
+        "beast": "朱雀",
         "role": "qa",
-        "system_prompt": "你是一位专业的 QA 工程师。审查开发者提交的代码，验证功能正确性、边界情况和代码质量。输出验证报告，标明通过/失败及原因。"
+        "system_prompt": _build_system_prompt("qa", "你是一位专业的 QA 工程师。审查开发者提交的代码，验证功能正确性、边界情况和代码质量。输出验证报告，标明通过/失败及原因。"),
     },
     "orchestrator": {
-        "name": "协调器",
+        "name": "瑞麟",
+        "beast": "麒麟",
         "role": "orchestrator",
-        "system_prompt": "你是任务协调器。分析用户需求，将其拆解为可执行的任务列表，以 JSON 格式输出。每个任务包含 title, description, assigned_to, depends_on, priority 字段。如果需求不清晰，设置 requires_clarification=true 并提供 clarification_question。"
-    }
+        "system_prompt": _build_system_prompt("orchestrator", "你是任务协调器。分析用户需求，将其拆解为可执行的任务列表，以 JSON 格式输出。每个任务包含 title, description, assigned_to, depends_on, priority 字段。如果需求不清晰，设置 requires_clarification=true 并提供 clarification_question。"),
+    },
 }
 
 

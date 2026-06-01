@@ -6,6 +6,7 @@ from typing import Optional, List
 from fastapi import APIRouter, Query, HTTPException
 from pydantic import BaseModel
 from agenthub.backend.services.session import AGENT_CONFIGS, session_manager
+from agenthub.backend.services.agent_identity import get_identity, get_bond_context
 import os
 from agenthub.backend.services.memory_manager import (
     memory_manager,
@@ -54,11 +55,31 @@ class AgentInfo(BaseModel):
 
 @router.get("/agents")
 async def get_agents():
-    """获取Agent列表"""
-    agents = [
-        {"id": agent_id, "name": config["name"], "role": config["role"]}
-        for agent_id, config in AGENT_CONFIGS.items()
-    ]
+    """获取Agent列表（含五行神兽身份信息）"""
+    agents = []
+    for agent_id, config in AGENT_CONFIGS.items():
+        agent = {
+            "id": agent_id,
+            "name": config["name"],
+            "role": config["role"],
+        }
+        # 合并神兽身份信息
+        identity = get_identity(agent_id)
+        if identity:
+            agent.update({
+                "beast": identity.get("beast"),
+                "nickname": identity.get("nickname"),
+                "element": identity.get("element"),
+                "avatar": identity.get("avatar"),
+                "color": identity.get("color"),
+                "personality": identity.get("personality"),
+                "catchphrase": identity.get("catchphrase"),
+                "strengths": identity.get("strengths"),
+                "caution": identity.get("caution"),
+                "bonds": identity.get("bonds"),
+                "speechStyle": identity.get("speech_style"),
+            })
+        agents.append(agent)
     return {"agents": agents}
 
 
@@ -149,7 +170,7 @@ async def send_message(req: SendMessageRequest):
                 await sse_manager.broadcast("message", {
                     "id": str(uuid.uuid4()),
                     "sender": "orchestrator",
-                    "sender_name": "协调器",
+                    "sender_name": "瑞麟",
                     "content": output.analysis,
                     "timestamp": "",
                     "type": "agent",
@@ -181,6 +202,12 @@ async def send_message(req: SendMessageRequest):
         try:
             context = await memory.get_context_for_agent(agent_id, user_id=req.user_id)
             agent_message = f"上下文参考:\n{context}\n\n用户消息: {route_result['content']}" if context else route_result['content']
+
+            # 注入羁绊上下文（当有多个 agent 协作时）
+            if isinstance(targets, list) and len(targets) > 1:
+                bond_context = get_bond_context(agent_id, targets)
+                if bond_context:
+                    agent_message = f"{agent_message}\n\n{bond_context}"
 
             # 流式调用 LLM，使用线程安全的队列桥接同步生成器与异步循环
             print(f"[STREAM] Starting stream for agent={agent_id}, message_id={message_id}")

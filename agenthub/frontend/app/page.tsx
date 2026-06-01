@@ -44,7 +44,7 @@ export default function HomePage() {
     <div className="flex flex-col h-screen">
       {/* Header */}
       <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 bg-white">
-        <h1 className="text-xl font-semibold">AgentHub</h1>
+        <h1 className="text-xl font-semibold">🐉 AgentHub · 五行神兽</h1>
         <div className="text-sm text-gray-500">
           {connectionState === "connected"
             ? "🟢 已连接"
@@ -62,7 +62,14 @@ export default function HomePage() {
           <MessageInput
             onSubmit={sendMessage}
             disabled={connectionState === "connecting"}
-            mentionCandidates={agents.map((a) => ({ id: a.id, label: a.name }))}
+            mentionCandidates={agents.map((a) => ({
+              id: a.id,
+              label: a.nickname || a.name,
+              avatar: a.avatar,
+              beast: a.beast,
+              element: a.element,
+              color: a.color,
+            }))}
           />
         </div>
       </div>

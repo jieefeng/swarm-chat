@@ -17,20 +17,20 @@ class TestMessageRouter:
         """创建MessageRouter实例"""
         return MessageRouter()
 
-    # UT-R001: 解析@产品经理指令 -> target="产品经理", content="你好"
+    # UT-R001: 解析@苍龙指令 -> target="苍龙", content="你好"
     def test_parse_pm_directive(self, router):
-        """UT-R001: 解析@产品经理指令，目标为产品经理，内容正确提取"""
-        result = router.parse("@产品经理 你好")
-        assert result["target"] == "产品经理"
+        """UT-R001: 解析@苍龙指令，目标为苍龙（PM），内容正确提取"""
+        result = router.parse("@苍龙 你好")
+        assert result["target"] == "苍龙"
         assert result["content"] == "你好"
         assert result["is_broadcast"] is False
         assert result["is_termination"] is False
 
-    # UT-R002: 解析@架构师指令 -> target="架构师", content="请分析"
+    # UT-R002: 解析@玄冥指令 -> target="玄冥", content="请分析"
     def test_parse_architect_directive(self, router):
-        """UT-R002: 解析@架构师指令，目标为架构师，内容正确提取"""
-        result = router.parse("@架构师 请分析")
-        assert result["target"] == "架构师"
+        """UT-R002: 解析@玄冥指令，目标为玄冥（架构师），内容正确提取"""
+        result = router.parse("@玄冥 请分析")
+        assert result["target"] == "玄冥"
         assert result["content"] == "请分析"
         assert result["is_broadcast"] is False
         assert result["is_termination"] is False
@@ -83,9 +83,9 @@ class TestMessageRouter:
     # UT-R009: 无终止关键词 -> is_termination=False
     def test_no_termination_keyword(self, router):
         """UT-R009: 普通消息不包含终止关键词，is_termination为False"""
-        result = router.parse("@产品经理 正常消息内容")
+        result = router.parse("@苍龙 正常消息内容")
         assert result["is_termination"] is False
-        assert result["target"] == "产品经理"
+        assert result["target"] == "苍龙"
 
     # UT-R010: 多个终止关键词取第一个
     def test_multiple_termination_keywords_first_wins(self, router):
@@ -97,14 +97,14 @@ class TestMessageRouter:
 
     def test_route_method_returns_tuple(self, router):
         """测试route方法返回正确的元组"""
-        target, content, is_broadcast, is_termination = router.route("@产品经理 你好")
-        assert target == "产品经理"
+        target, content, is_broadcast, is_termination = router.route("@苍龙 你好")
+        assert target == "苍龙"
         assert content == "你好"
         assert is_broadcast is False
         assert is_termination is False
 
     def test_last_parse_result_saved(self, router):
         """测试最后解析结果被保存"""
-        router.parse("@架构师 分析需求")
+        router.parse("@玄冥 分析需求")
         assert router.last_parse_result is not None
-        assert router.last_parse_result["target"] == "架构师"
+        assert router.last_parse_result["target"] == "玄冥"

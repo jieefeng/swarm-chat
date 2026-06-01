@@ -15,12 +15,26 @@ export interface MentionCandidate {
   id: string;
   label: string;
   avatar?: string;
+  beast?: string;
+  element?: string;
+  color?: { primary: string; secondary: string };
 }
 
 export interface Agent {
   id: string;
   name: string;
   role: string;
+  beast?: string;
+  nickname?: string;
+  element?: string;
+  avatar?: string;
+  color?: { primary: string; secondary: string };
+  personality?: string;
+  catchphrase?: string;
+  strengths?: string[];
+  caution?: string;
+  bonds?: { partner: string; relation: string };
+  speechStyle?: { tone: string; quirks: string[] };
 }
 
 export interface SendMessageResponse {

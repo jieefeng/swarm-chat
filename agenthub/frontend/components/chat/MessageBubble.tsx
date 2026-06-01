@@ -14,9 +14,14 @@ import type { Message } from "@/lib/types";
 interface MessageBubbleProps {
   message: Message;
   isStreaming: boolean;
+  agentColor?: string;
 }
 
-export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
+export function MessageBubble({
+  message,
+  isStreaming,
+  agentColor,
+}: MessageBubbleProps) {
   const isUser = message.type === "user";
 
   if (message.messageType === "task_panel") {
@@ -91,13 +96,23 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
     <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}>
       <div
         className={`max-w-[70%] rounded-2xl px-4 py-2 ${
-          isUser
-            ? "bg-primary text-white"
-            : "bg-white text-gray-800 border border-gray-200"
+          isUser ? "bg-primary text-white" : "bg-white text-gray-800 border"
         }`}
+        style={
+          !isUser && agentColor
+            ? {
+                borderLeftWidth: "3px",
+                borderLeftColor: agentColor,
+                borderColor: "#E5E7EB",
+              }
+            : undefined
+        }
       >
         {!isUser && (
-          <div className="text-xs font-medium text-gray-500 mb-1">
+          <div
+            className="text-xs font-medium mb-1"
+            style={{ color: agentColor || "#6B7280" }}
+          >
             {message.sender_name || message.sender}
           </div>
         )}
