@@ -1,12 +1,16 @@
 """A2A 消息路由 - @mention 解析 + 自动路由"""
+import logging
 import re
 import uuid
 import asyncio
+from datetime import datetime, timezone
 from typing import Optional
 
 from agenthub.backend.services.session import AGENT_CONFIGS, session_manager
 from agenthub.backend.services.thread_manager import thread_manager
 from agenthub.backend.services.sse_manager import sse_manager
+
+logger = logging.getLogger(__name__)
 
 
 class A2ARouter:
@@ -18,8 +22,8 @@ class A2ARouter:
     3. 投递消息并触发 LLM 响应
     """
 
-    # @mention 正则：匹配 @agent_id 或 @agent_name
-    MENTION_PATTERN = re.compile(r"@(\w+)")
+    # @mention 正则：匹配 @agent_id 或 @agent_name（不匹配 email 中的 @）
+    MENTION_PATTERN = re.compile(r"(?<!\w)@(\w+)")
 
     def __init__(self):
         # 构建 name → id 映射
@@ -87,7 +91,7 @@ class A2ARouter:
                 targets = list(set(task.assigned_to for task in output.tasks))
                 return targets
         except Exception as e:
-            print(f"[A2A ROUTER] Orchestrator routing failed: {e}")
+            logger.warning(f"Orchestrator routing failed, falling back to broadcast: {e}", exc_info=True)
 
         # 4. 降级：广播给所有 agent
         return list(AGENT_CONFIGS.keys())
@@ -105,7 +109,7 @@ class A2ARouter:
         """
         config = AGENT_CONFIGS.get(agent_id)
         if not config:
-            print(f"[A2A ROUTER] Unknown agent: {agent_id}")
+            logger.error(f"Unknown agent: {agent_id}")
             return
 
         agent_name = config.get("name", agent_id)
@@ -158,12 +162,13 @@ class A2ARouter:
                 "sender": agent_id,
                 "sender_name": agent_name,
                 "content": full_response,
-                "timestamp": "",
+                "timestamp": datetime.now(tz=timezone.utc).isoformat(),
                 "type": "agent",
             }, thread_id=thread_id)
 
         except Exception as e:
-            error_content = f"Error: {str(e)}"
+            logger.error(f"Agent {agent_id} LLM call failed: {e}", exc_info=True)
+            error_content = "抱歉，Agent 处理消息时出现错误，请稍后重试。"
             await thread_manager.add_message(
                 thread_id=thread_id,
                 sender_id=agent_id,
@@ -175,7 +180,7 @@ class A2ARouter:
                 "sender": agent_id,
                 "sender_name": agent_name,
                 "content": error_content,
-                "timestamp": "",
+                "timestamp": datetime.now(tz=timezone.utc).isoformat(),
                 "type": "agent",
             }, thread_id=thread_id)
 

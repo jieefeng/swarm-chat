@@ -37,3 +37,11 @@ def test_parse_mentions_unknown(router):
     content = "@unknown 这个方案可行吗？"
     cleaned, mentions = router.parse_mentions(content)
     assert mentions == []
+
+
+def test_parse_mentions_email_not_matched(router):
+    """测试邮箱地址中的 @ 不被误识别为 mention"""
+    content = "请联系 user@example.com 或 @architect"
+    cleaned, mentions = router.parse_mentions(content)
+    assert mentions == ["architect"]
+    assert "user@example.com" in cleaned
