@@ -1,6 +1,7 @@
 """ThreadManager 测试"""
 import pytest
 
+from agenthub.backend.models.thread import ThreadStatus
 from agenthub.backend.services.thread_manager import ThreadManager
 
 
@@ -14,7 +15,7 @@ async def test_create_thread(manager):
     thread = await manager.create_thread("测试线程", created_by="user")
     assert thread.title == "测试线程"
     assert thread.status == "active"
-    assert thread.id in manager._threads
+    assert await manager.get_thread(thread.id) is not None
 
 
 @pytest.mark.asyncio
@@ -45,7 +46,7 @@ async def test_list_threads_with_archived(manager):
     thread1 = await manager.create_thread("活跃线程")
     thread2 = await manager.create_thread("归档线程")
     await manager.archive_thread(thread2.id)
-    active_threads = await manager.list_threads(status="active")
+    active_threads = await manager.list_threads(status=ThreadStatus.ACTIVE)
     assert len(active_threads) == 1
     assert active_threads[0].id == thread1.id
 

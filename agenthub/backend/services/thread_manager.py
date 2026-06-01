@@ -32,7 +32,7 @@ class ThreadManager:
         """获取线程"""
         return self._threads.get(thread_id)
 
-    async def list_threads(self, status: str = "active") -> list[Thread]:
+    async def list_threads(self, status: ThreadStatus = ThreadStatus.ACTIVE) -> list[Thread]:
         """获取线程列表"""
         return [
             t for t in self._threads.values()
@@ -66,6 +66,7 @@ class ThreadManager:
 
         # 自动更新 participants
         thread = self._threads[thread_id]
+        # user 不加入 participants，因为 user 是隐式参与者，不需要显示在列表中
         if sender_id not in thread.participants and sender_id != "user":
             thread.participants.append(sender_id)
         for agent_id in message.mentions:
