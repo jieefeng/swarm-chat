@@ -6,7 +6,14 @@ from typing import Optional, List
 from fastapi import APIRouter, Query, HTTPException
 from pydantic import BaseModel
 from agenthub.backend.services.session import AGENT_CONFIGS, session_manager
-from agenthub.backend.services.memory_manager import memory_manager
+import os
+from agenthub.backend.services.memory_manager import (
+    memory_manager,
+    redis_memory_manager,
+)
+
+# 根据 STORAGE_BACKEND 选择存储实例
+memory = redis_memory_manager if os.getenv("STORAGE_BACKEND") == "redis" else memory_manager
 from agenthub.backend.services.sse_manager import sse_manager
 from agenthub.backend.services.router import MessageRouter
 from agenthub.backend.services.orchestrator import OrchestratorAgent
@@ -22,7 +29,8 @@ class SendMessageRequest(BaseModel):
     content: str
     sender: str = "user"
     sender_name: str = "用户"
-    agent_id: Optional[str] = None  # 前端指定的Agent ID
+    agent_id: Optional[str] = None
+    user_id: str = "default"
 
 
 class MessageRequest(BaseModel):
@@ -57,7 +65,7 @@ async def get_agents():
 @router.get("/messages")
 async def get_messages(limit: int = Query(50, ge=1, le=200)):
     """获取消息历史"""
-    messages = memory_manager.get_messages(limit=limit)
+    messages = await memory.get_messages(limit=limit)
     return {"messages": messages}
 
 
@@ -75,18 +83,17 @@ async def send_message(req: SendMessageRequest):
     route_result = message_router.parse(req.content)
 
     # 添加用户消息到memory
-    user_msg = memory_manager.add_message(
+    user_msg = await memory.add_message(
         role=req.sender,
         content=req.content,
         agent_id=req.sender,
-        sender_name=req.sender_name
+        sender_name=req.sender_name,
+        user_id=req.user_id
     )
     print(f"[MESSAGES] User message added: {user_msg.get('id')}")
 
-    # 推送用户消息到SSE
-    print(f"[MESSAGES] Broadcasting user message...")
-    await sse_manager.broadcast("message", user_msg)
-    print(f"[MESSAGES] User message broadcast complete")
+    # Note: 不广播用户消息，因为前端已通过乐观更新显示
+    # 其他客户端可通过 GET /api/messages 获取历史消息
 
     # 检查终止信号
     if route_result["is_termination"]:
@@ -149,50 +156,83 @@ async def send_message(req: SendMessageRequest):
                 })
         except Exception as e:
             print(f"[MESSAGES] Orchestrator error: {e}")
-            error_msg = memory_manager.add_message(
+            error_msg = await memory.add_message(
                 role="orchestrator",
                 content=f"协调器处理失败: {str(e)}",
                 agent_id="orchestrator",
-                sender_name="协调器"
+                sender_name="协调器",
+                user_id=req.user_id
             )
             await sse_manager.broadcast("message", error_msg)
         return {"status": "ok", "message_id": user_msg.get("id", "")}
 
-    # 并行发送消息给Agent
+    # 并行发送消息给Agent（流式输出）
     async def send_to_single_agent(agent_id: str) -> dict:
-        """发送消息给单个Agent"""
+        """流式发送消息给单个Agent，逐个广播文本片段"""
         config = AGENT_CONFIGS.get(agent_id)
         if not config:
             return None
 
+        agent_name = config.get("name", agent_id)
+        message_id = f"msg_{uuid.uuid4().hex[:8]}"
+        full_response = ""
+        seq = 0
+
         try:
-            context = memory_manager.get_context_for_agent(agent_id)
+            context = await memory.get_context_for_agent(agent_id, user_id=req.user_id)
             agent_message = f"上下文参考:\n{context}\n\n用户消息: {route_result['content']}" if context else route_result['content']
 
-            # 在线程池中执行同步的 LLM 调用，避免阻塞事件循环
-            response = await asyncio.to_thread(session_manager.send_to_agent, agent_id, agent_message)
+            # 流式调用 LLM，使用线程安全的队列桥接同步生成器与异步循环
+            print(f"[STREAM] Starting stream for agent={agent_id}, message_id={message_id}")
+            queue: asyncio.Queue = asyncio.Queue()
 
-            config = AGENT_CONFIGS.get(agent_id, {})
-            agent_name = config.get("name", agent_id)
+            def _produce():
+                try:
+                    for chunk in session_manager.send_to_agent_stream(agent_id, agent_message):
+                        queue.put_nowait(chunk)
+                except Exception as e:
+                    queue.put_nowait(e)
+                finally:
+                    queue.put_nowait(None)  # 哨兵值，表示生成器结束
 
-            agent_msg = memory_manager.add_message(
+            loop = asyncio.get_event_loop()
+            loop.run_in_executor(None, _produce)
+            print(f"[STREAM] Producer started, consuming from queue")
+
+            while True:
+                item = await queue.get()
+                if item is None:
+                    print(f"[STREAM] Generator exhausted after {seq} chunks")
+                    break
+                if isinstance(item, Exception):
+                    raise item
+                full_response += item
+                print(f"[STREAM] Got chunk #{seq}: {repr(item[:50])}")
+                await sse_manager.broadcast_stream_chunk(message_id, item, seq)
+                seq += 1
+
+            # 流式完成，存储完整消息并广播
+            print(f"[STREAM] Stream complete. Total chunks: {seq}, response length: {len(full_response)}")
+            agent_msg = await memory.add_message(
                 role=agent_id,
-                content=response,
+                content=full_response,
                 agent_id=agent_id,
-                sender_name=agent_name
+                sender_name=agent_name,
+                user_id=req.user_id
             )
-
+            # 用实际的 message_id 更新
+            agent_msg["id"] = message_id
+            print(f"[STREAM] Broadcasting final message event, message_id={message_id}")
             await sse_manager.broadcast("message", agent_msg)
             return agent_msg
 
         except Exception as e:
-            config = AGENT_CONFIGS.get(agent_id, {})
-            agent_name = config.get("name", agent_id)
-            error_msg = memory_manager.add_message(
+            error_msg = await memory.add_message(
                 role=agent_id,
                 content=f"Error: {str(e)}",
                 agent_id=agent_id,
-                sender_name=agent_name
+                sender_name=agent_name,
+                user_id=req.user_id
             )
             await sse_manager.broadcast("message", error_msg)
             return error_msg

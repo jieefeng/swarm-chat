@@ -17,29 +17,29 @@ class TestMessageRouter:
         """创建MessageRouter实例"""
         return MessageRouter()
 
-    # UT-R001: 解析@pm指令 -> target="pm", content="你好"
+    # UT-R001: 解析@产品经理指令 -> target="产品经理", content="你好"
     def test_parse_pm_directive(self, router):
-        """UT-R001: 解析@pm指令，目标为pm，内容正确提取"""
-        result = router.parse("@pm 你好")
-        assert result["target"] == "pm"
+        """UT-R001: 解析@产品经理指令，目标为产品经理，内容正确提取"""
+        result = router.parse("@产品经理 你好")
+        assert result["target"] == "产品经理"
         assert result["content"] == "你好"
         assert result["is_broadcast"] is False
         assert result["is_termination"] is False
 
-    # UT-R002: 解析@architect指令 -> target="architect", content="请分析"
+    # UT-R002: 解析@架构师指令 -> target="架构师", content="请分析"
     def test_parse_architect_directive(self, router):
-        """UT-R002: 解析@architect指令，目标为architect，内容正确提取"""
-        result = router.parse("@architect 请分析")
-        assert result["target"] == "architect"
+        """UT-R002: 解析@架构师指令，目标为架构师，内容正确提取"""
+        result = router.parse("@架构师 请分析")
+        assert result["target"] == "架构师"
         assert result["content"] == "请分析"
         assert result["is_broadcast"] is False
         assert result["is_termination"] is False
 
-    # UT-R003: 解析无@广播消息 -> target=["pm","architect"], is_broadcast=True
+    # UT-R003: 解析无@广播消息 -> target=所有Agent名称列表, is_broadcast=True
     def test_parse_broadcast_message(self, router):
         """UT-R003: 无@前缀的消息视为广播，发送给所有Agent"""
         result = router.parse("这是一条广播消息")
-        assert result["target"] == ["pm", "architect"]
+        assert result["target"] == router.AGENT_NAMES
         assert result["content"] == "这是一条广播消息"
         assert result["is_broadcast"] is True
         assert result["is_termination"] is False
@@ -83,9 +83,9 @@ class TestMessageRouter:
     # UT-R009: 无终止关键词 -> is_termination=False
     def test_no_termination_keyword(self, router):
         """UT-R009: 普通消息不包含终止关键词，is_termination为False"""
-        result = router.parse("@pm 正常消息内容")
+        result = router.parse("@产品经理 正常消息内容")
         assert result["is_termination"] is False
-        assert result["target"] == "pm"
+        assert result["target"] == "产品经理"
 
     # UT-R010: 多个终止关键词取第一个
     def test_multiple_termination_keywords_first_wins(self, router):
@@ -97,14 +97,14 @@ class TestMessageRouter:
 
     def test_route_method_returns_tuple(self, router):
         """测试route方法返回正确的元组"""
-        target, content, is_broadcast, is_termination = router.route("@pm 你好")
-        assert target == "pm"
+        target, content, is_broadcast, is_termination = router.route("@产品经理 你好")
+        assert target == "产品经理"
         assert content == "你好"
         assert is_broadcast is False
         assert is_termination is False
 
     def test_last_parse_result_saved(self, router):
         """测试最后解析结果被保存"""
-        router.parse("@architect 分析需求")
+        router.parse("@架构师 分析需求")
         assert router.last_parse_result is not None
-        assert router.last_parse_result["target"] == "architect"
+        assert router.last_parse_result["target"] == "架构师"

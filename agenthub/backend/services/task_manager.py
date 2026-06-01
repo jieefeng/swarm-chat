@@ -2,9 +2,9 @@
 import asyncio
 from collections import defaultdict, deque
 
-from models.task import Task, TaskCreate, TaskStatus, OrchestratorOutput
-from services.agent_adapter import get_agent_adapter, IAgentAdapter
-from services.sse_manager import sse_manager
+from agenthub.backend.models.task import Task, TaskCreate, TaskStatus, OrchestratorOutput
+from agenthub.backend.services.agent_adapter import get_agent_adapter, IAgentAdapter
+from agenthub.backend.services.sse_manager import sse_manager
 
 
 MAX_RETRY = 3

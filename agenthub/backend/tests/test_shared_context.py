@@ -1,6 +1,6 @@
 """SharedContext 测试"""
 import pytest
-from services.shared_context import SharedContext
+from agenthub.backend.services.shared_context import SharedContext
 
 
 @pytest.mark.asyncio

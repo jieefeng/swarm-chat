@@ -54,11 +54,25 @@ export function createSSEConnection(options: SSEConnectionOptions) {
 
   const API_KEY = process.env.NEXT_PUBLIC_API_KEY || "";
 
+  // 连接就绪的 Promise，调用方可 await 确保连接建立后再发请求
+  let resolveReady: () => void;
+  const ready = new Promise<void>((resolve) => {
+    resolveReady = resolve;
+  });
+
   const notifyConnected = () => {
-    if (options.onConnected && !aborted && !connected) {
+    if (!aborted && !connected) {
       connected = true;
-      console.log("[SSE] Connection established, calling onConnected");
-      options.onConnected();
+      console.log("[SSE] Connection established, resolving ready promise");
+      resolveReady();
+      options.onConnected?.();
+    } else {
+      console.log(
+        "[SSE] notifyConnected skipped: aborted=",
+        aborted,
+        "connected=",
+        connected,
+      );
     }
   };
 
@@ -96,10 +110,11 @@ export function createSSEConnection(options: SSEConnectionOptions) {
           console.log("[SSE] Stream completed (done=true)");
           break;
         }
-        console.log("[SSE] Raw chunk received:", value.length, "bytes");
-        buffer += decoder.decode(value, { stream: true });
-        // 按双换行分割，处理完整的 event + data 块
-        const blocks = buffer.split("\n\n");
+        const raw = decoder.decode(value, { stream: true });
+        buffer += raw;
+        // sse-starlette 使用 CRLF (\r\n) 行尾，先规范化为 LF (\n) 再按 \n\n 分割
+        const normalized = buffer.replace(/\r\n/g, "\n");
+        const blocks = normalized.split("\n\n");
         buffer = blocks.pop() || "";
 
         for (const block of blocks) {
@@ -117,8 +132,13 @@ export function createSSEConnection(options: SSEConnectionOptions) {
           }
 
           if (dataContent) {
+            // 忽略 keepalive 心跳事件
+            if (eventType === "keepalive") {
+              continue;
+            }
+
             console.log(
-              `[SSE] Event: ${eventType}, Data: ${dataContent.substring(0, 100)}...`,
+              `[SSE] Parsed event: type=${eventType}, dataLength=${dataContent.length}, preview=${dataContent.substring(0, 80)}`,
             );
             try {
               const parsed = JSON.parse(dataContent);
@@ -192,5 +212,6 @@ export function createSSEConnection(options: SSEConnectionOptions) {
       aborted = true;
       abortController.abort();
     },
+    ready,
   };
 }

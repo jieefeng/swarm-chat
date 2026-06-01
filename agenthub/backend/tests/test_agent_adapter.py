@@ -2,7 +2,7 @@
 import pytest
 from unittest.mock import AsyncMock, patch
 
-from services.agent_adapter import BailianAdapter
+from agenthub.backend.services.agent_adapter import BailianAdapter
 
 
 @pytest.mark.asyncio

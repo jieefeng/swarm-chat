@@ -1,8 +1,8 @@
 """Orchestrator Agent - LLM 驱动任务拆解 + Self-Correction"""
 import json
 import logging
-from models.task import OrchestratorOutput
-from services.agent_adapter import get_agent_adapter, IAgentAdapter
+from agenthub.backend.models.task import OrchestratorOutput
+from agenthub.backend.services.agent_adapter import get_agent_adapter, IAgentAdapter
 
 logger = logging.getLogger(__name__)
 

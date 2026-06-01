@@ -5,14 +5,15 @@ import rehypeSanitize from "rehype-sanitize";
 import remarkGfm from "remark-gfm";
 import { ClarificationCard } from "@/components/chat/ClarificationCard";
 import { DiffViewer } from "@/components/chat/DiffViewer";
+import { PreviewCard } from "@/components/chat/PreviewCard";
 import { TaskPanel } from "@/components/chat/TaskPanel";
+import { extractHtmlFromMarkdown, extractTitle } from "@/lib/preview";
 import { useTaskStore } from "@/lib/stores/taskStore";
 import type { Message } from "@/lib/types";
 
 interface MessageBubbleProps {
   message: Message;
   isStreaming: boolean;
-  onCopySuccess?: () => void;
 }
 
 export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
@@ -83,6 +84,9 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
     );
   }
 
+  // HTML preview detection
+  const htmlCode = !isUser ? extractHtmlFromMarkdown(message.content) : null;
+
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}>
       <div
@@ -105,6 +109,15 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
             {message.content}
           </ReactMarkdown>
         </div>
+        {htmlCode && (
+          <div className="mt-3">
+            <PreviewCard
+              htmlCode={htmlCode}
+              title={extractTitle(message.content)}
+              height={300}
+            />
+          </div>
+        )}
         {isStreaming && (
           <span className="inline-block w-2 h-4 bg-current ml-1 animate-pulse" />
         )}

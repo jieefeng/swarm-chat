@@ -1,8 +1,8 @@
 """Orchestrator Agent 测试"""
 import pytest
 from unittest.mock import AsyncMock
-from models.task import OrchestratorOutput
-from services.orchestrator import OrchestratorAgent
+from agenthub.backend.models.task import OrchestratorOutput
+from agenthub.backend.services.orchestrator import OrchestratorAgent
 
 
 @pytest.mark.asyncio

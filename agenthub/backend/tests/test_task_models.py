@@ -1,6 +1,6 @@
 """任务模型测试"""
 import pytest
-from models.task import Task, TaskStatus, OrchestratorOutput
+from agenthub.backend.models.task import Task, TaskStatus, OrchestratorOutput
 
 
 def test_task_default_status():
