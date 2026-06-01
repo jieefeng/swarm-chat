@@ -5,7 +5,7 @@ import { AgentList } from "@/components/agents/AgentList";
 import { MessageInput } from "@/components/chat/MessageInput";
 import { MessageList } from "@/components/chat/MessageList";
 import { ThreadList } from "@/components/threads/ThreadList";
-import { api } from "@/lib/api";
+import { api, createThread } from "@/lib/api";
 import { useChatStream } from "@/lib/hooks/useChatStream";
 import { useAgentStore } from "@/lib/stores/agentStore";
 import { useMessageStore } from "@/lib/stores/messageStore";
@@ -14,6 +14,10 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:7005";
 
 export default function HomePage() {
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
+  // TODO: #3 - Load message history when activeThreadId changes
+  // Currently messages only load on mount. Need useEffect to fetch
+  // /api/threads/${activeThreadId}/messages and update messageStore
+  // when the user switches threads.
   const agents = useAgentStore((s) => s.agents);
   const setAgents = useAgentStore((s) => s.setAgents);
   const messages = useMessageStore((s) => s.messages);
@@ -24,13 +28,13 @@ export default function HomePage() {
   });
 
   const handleCreateThread = async (title: string, description?: string) => {
-    const response = await fetch("/api/threads", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, description }),
-    });
-    const thread = await response.json();
-    setActiveThreadId(thread.id);
+    try {
+      const thread = await createThread(title, description);
+      setActiveThreadId(thread.id);
+    } catch (error) {
+      console.error("Failed to create thread:", error);
+      // TODO: add toast notification for user feedback
+    }
   };
 
   useEffect(() => {

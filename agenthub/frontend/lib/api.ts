@@ -8,6 +8,21 @@ const headers = {
   "X-API-Key": API_KEY,
 };
 
+export async function createThread(title: string, description?: string) {
+  const response = await fetch(`${API_BASE}/api/threads`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-API-Key": API_KEY,
+    },
+    body: JSON.stringify({ title, description }),
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to create thread: ${response.status}`);
+  }
+  return response.json();
+}
+
 export const api = {
   async sendMessage(
     content: string,
