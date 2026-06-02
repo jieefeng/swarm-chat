@@ -31,6 +31,15 @@ class LLMConfigUpdate(BaseModel):
             raise ValueError("llm_provider must be 'bailian' or 'minimax'")
         return v
 
+    @field_validator("model")
+    @classmethod
+    def validate_model(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            v = v.strip()
+            if v == "":
+                return None
+        return v
+
 
 @router.get("/llm-config")
 async def get_all_llm_config():

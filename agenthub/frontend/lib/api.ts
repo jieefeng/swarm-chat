@@ -63,7 +63,9 @@ export const api = {
   },
 
   async getAgentConfig(agentId: string): Promise<AgentConfig> {
-    const res = await fetch(`${API_BASE}/api/agents/${agentId}/config`, { headers });
+    const res = await fetch(`${API_BASE}/api/agents/${agentId}/config`, {
+      headers,
+    });
     if (!res.ok) {
       throw new Error(`HTTP ${res.status}`);
     }

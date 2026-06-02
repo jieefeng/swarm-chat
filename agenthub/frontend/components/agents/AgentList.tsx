@@ -18,7 +18,7 @@ const ELEMENT_EMOJI: Record<string, string> = {
 
 const PROVIDER_LABELS: Record<string, string> = {
   bailian: "阿里云百炼",
-  anthropic: "Claude",
+  minimax: "MiniMax",
 };
 
 export function AgentList({ agents }: AgentListProps) {
@@ -97,7 +97,7 @@ export function AgentList({ agents }: AgentListProps) {
               className="text-xs border border-gray-200 rounded px-1.5 py-0.5 bg-white disabled:opacity-50"
             >
               <option value="bailian">阿里云百炼</option>
-              <option value="anthropic">Claude</option>
+              <option value="minimax">MiniMax</option>
             </select>
           </div>
 

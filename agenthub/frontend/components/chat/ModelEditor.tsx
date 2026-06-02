@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 
 interface ModelEditorProps {
@@ -44,7 +44,7 @@ export function ModelEditor({ agentId, agentName }: ModelEditorProps) {
       await api.updateAgentConfig(agentId, { model: model || undefined });
       setSuccess(true);
       setTimeout(() => setSuccess(false), 2000);
-      setIsEditing(false);  // 保存成功后才退出
+      setIsEditing(false); // 保存成功后才退出
     } catch (err) {
       setError(err instanceof Error ? err.message : "保存失败");
       // 保持编辑模式，让用户看到错误
