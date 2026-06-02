@@ -7,7 +7,9 @@ import { ClarificationCard } from "@/components/chat/ClarificationCard";
 import { DiffViewer } from "@/components/chat/DiffViewer";
 import { PreviewCard } from "@/components/chat/PreviewCard";
 import { TaskPanel } from "@/components/chat/TaskPanel";
+import { ToolExecutionCard } from "@/components/chat/ToolExecutionCard";
 import { extractHtmlFromMarkdown, extractTitle } from "@/lib/preview";
+import { useMessageStore } from "@/lib/stores/messageStore";
 import { useTaskStore } from "@/lib/stores/taskStore";
 import type { Message } from "@/lib/types";
 
@@ -23,6 +25,7 @@ export function MessageBubble({
   agentColor,
 }: MessageBubbleProps) {
   const isUser = message.type === "user";
+  const toolExecutions = useMessageStore((s) => s.toolExecutions[message.id] || []);
 
   if (message.messageType === "task_panel") {
     const tasks = useTaskStore.getState().tasks;
@@ -116,6 +119,9 @@ export function MessageBubble({
             {message.sender_name || message.sender}
           </div>
         )}
+        {toolExecutions.map((tool) => (
+          <ToolExecutionCard key={tool.id} tool={tool} />
+        ))}
         <div className="prose prose-sm max-w-none">
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
