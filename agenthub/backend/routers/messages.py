@@ -32,6 +32,7 @@ class SendMessageRequest(BaseModel):
     sender_name: str = "用户"
     agent_id: Optional[str] = None
     user_id: str = "default"
+    thread_id: str = "default"
 
 
 class MessageRequest(BaseModel):
@@ -84,9 +85,9 @@ async def get_agents():
 
 
 @router.get("/messages")
-async def get_messages(limit: int = Query(50, ge=1, le=200)):
-    """获取消息历史"""
-    messages = await memory.get_messages(limit=limit)
+async def get_messages(limit: int = Query(50, ge=1, le=200), thread_id: str = Query("default")):
+    """获取消息历史（按线程隔离）"""
+    messages = await memory.get_messages(limit=limit, thread_id=thread_id)
     return {"messages": messages}
 
 
@@ -109,7 +110,8 @@ async def send_message(req: SendMessageRequest):
         content=req.content,
         agent_id=req.sender,
         sender_name=req.sender_name,
-        user_id=req.user_id
+        user_id=req.user_id,
+        thread_id=req.thread_id,
     )
     print(f"[MESSAGES] User message added: {user_msg.get('id')}")
 
@@ -182,7 +184,8 @@ async def send_message(req: SendMessageRequest):
                 content=f"协调器处理失败: {str(e)}",
                 agent_id="orchestrator",
                 sender_name="协调器",
-                user_id=req.user_id
+                user_id=req.user_id,
+                thread_id=req.thread_id,
             )
             await sse_manager.broadcast("message", error_msg)
         return {"status": "ok", "message_id": user_msg.get("id", "")}
@@ -200,7 +203,7 @@ async def send_message(req: SendMessageRequest):
         seq = 0
 
         try:
-            context = await memory.get_context_for_agent(agent_id, user_id=req.user_id)
+            context = await memory.get_context_for_agent(agent_id, user_id=req.user_id, thread_id=req.thread_id)
             agent_message = f"上下文参考:\n{context}\n\n用户消息: {route_result['content']}" if context else route_result['content']
 
             # 注入羁绊上下文（当有多个 agent 协作时）
@@ -215,7 +218,20 @@ async def send_message(req: SendMessageRequest):
 
             def _produce():
                 try:
-                    for chunk in session_manager.send_to_agent_stream(agent_id, agent_message):
+                    for chunk in session_manager.send_to_agent_stream(
+                        agent_id,
+                        agent_message,
+                        thread_id=req.thread_id,
+                        on_tool_start=lambda aid, cmd, thread_id=None: queue.put_nowait(
+                            ("_tool_start", aid, cmd, thread_id)
+                        ),
+                        on_tool_progress=lambda aid, out, thread_id=None: queue.put_nowait(
+                            ("_tool_progress", aid, out, thread_id)
+                        ),
+                        on_tool_result=lambda aid, content, success, thread_id=None: queue.put_nowait(
+                            ("_tool_result", aid, content, success, thread_id)
+                        ),
+                    ):
                         queue.put_nowait(chunk)
                 except Exception as e:
                     queue.put_nowait(e)
@@ -233,6 +249,18 @@ async def send_message(req: SendMessageRequest):
                     break
                 if isinstance(item, Exception):
                     raise item
+                if isinstance(item, tuple):
+                    event_type = item[0]
+                    if event_type == "_tool_start":
+                        _, aid, cmd, tid = item
+                        await sse_manager.broadcast_tool_start(aid, cmd, message_id, thread_id=tid)
+                    elif event_type == "_tool_progress":
+                        _, aid, out, tid = item
+                        await sse_manager.broadcast_tool_progress(aid, out, message_id, thread_id=tid)
+                    elif event_type == "_tool_result":
+                        _, aid, content, success, tid = item
+                        await sse_manager.broadcast_tool_result(aid, content, success, message_id, thread_id=tid)
+                    continue
                 full_response += item
                 print(f"[STREAM] Got chunk #{seq}: {repr(item[:50])}")
                 await sse_manager.broadcast_stream_chunk(message_id, item, seq)
@@ -245,7 +273,8 @@ async def send_message(req: SendMessageRequest):
                 content=full_response,
                 agent_id=agent_id,
                 sender_name=agent_name,
-                user_id=req.user_id
+                user_id=req.user_id,
+                thread_id=req.thread_id,
             )
             # 用实际的 message_id 更新
             agent_msg["id"] = message_id
@@ -259,7 +288,8 @@ async def send_message(req: SendMessageRequest):
                 content=f"Error: {str(e)}",
                 agent_id=agent_id,
                 sender_name=agent_name,
-                user_id=req.user_id
+                user_id=req.user_id,
+                thread_id=req.thread_id,
             )
             await sse_manager.broadcast("message", error_msg)
             return error_msg

@@ -195,6 +195,45 @@ class TestSSEEventManager:
         await asyncio.sleep(0.1)
 
     @pytest.mark.asyncio
+    async def test_thread_isolation(self, sse_manager):
+        """测试线程隔离：线程订阅者只收到该线程的事件"""
+        # 创建两个订阅者：一个订阅线程 A，一个订阅全局
+        queue_a = asyncio.Queue()
+        queue_global = asyncio.Queue()
+
+        sse_manager.subscribers[queue_a] = "thread_a"
+        sse_manager.subscribers[queue_global] = None
+
+        try:
+            # 广播到线程 A
+            await sse_manager.broadcast("message", {"content": "hello"}, thread_id="thread_a")
+
+            # 线程 A 订阅者应该收到
+            event_a = await asyncio.wait_for(queue_a.get(), timeout=1)
+            assert event_a["event"] == "message"
+            assert "hello" in event_a["data"]
+
+            # 全局订阅者也应该收到
+            event_global = await asyncio.wait_for(queue_global.get(), timeout=1)
+            assert event_global["event"] == "message"
+            assert "hello" in event_global["data"]
+
+            # 广播到线程 B
+            await sse_manager.broadcast("message", {"content": "world"}, thread_id="thread_b")
+
+            # 线程 A 订阅者不应该收到
+            assert queue_a.empty()
+
+            # 全局订阅者应该收到
+            event_global_b = await asyncio.wait_for(queue_global.get(), timeout=1)
+            assert event_global_b["event"] == "message"
+            assert "world" in event_global_b["data"]
+        finally:
+            # 清理手动添加的订阅者
+            sse_manager.subscribers.pop(queue_a, None)
+            sse_manager.subscribers.pop(queue_global, None)
+
+    @pytest.mark.asyncio
     async def test_multiple_subscriptions(self, sse_manager):
         """测试多个订阅者同时在线
 

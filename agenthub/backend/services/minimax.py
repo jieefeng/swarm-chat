@@ -1,4 +1,4 @@
-"""阿里云百炼 API 服务封装 - 兼容 OpenAI 接口"""
+"""MiniMax API 服务封装 - 兼容 OpenAI 接口"""
 import os
 import asyncio
 from collections.abc import Generator
@@ -6,16 +6,16 @@ from typing import Optional
 from openai import OpenAI
 
 
-class BailianService:
-    """百炼 API 服务封装 - 带重试和超时"""
+class MiniMaxService:
+    """MiniMax API 服务封装 - 带重试和超时"""
 
-    DEFAULT_MODEL = "qwen3.5-plus-2026-04-20"
+    DEFAULT_MODEL = "MiniMax-Text-01"
 
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
-        self.api_key = api_key or os.getenv("DASHSCOPE_API_KEY", "")
+        self.api_key = api_key or os.getenv("MINIMAX_API_KEY", "")
         self.client = OpenAI(
             api_key=self.api_key,
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+            base_url="https://api.minimax.chat/v1",
         )
         self.model = model or self.DEFAULT_MODEL
         self.default_timeout = 60  # 秒
@@ -32,7 +32,7 @@ class BailianService:
         max_retries: int = 3,
         timeout: Optional[int] = None
     ) -> str:
-        """发送消息到百炼 API，带重试机制
+        """发送消息到 MiniMax API，带重试机制
 
         Args:
             session_id: 会话ID
@@ -42,7 +42,7 @@ class BailianService:
             timeout: 超时时间（秒）
 
         Returns:
-            百炼的响应文本
+            MiniMax 的响应文本
 
         Raises:
             Exception: 重试耗尽后抛出
@@ -64,7 +64,7 @@ class BailianService:
 
             except Exception as e:
                 if attempt == max_retries - 1:
-                    raise RuntimeError(f"百炼 API 调用失败，已重试{max_retries}次: {str(e)}") from e
+                    raise RuntimeError(f"MiniMax API 调用失败，已重试{max_retries}次: {str(e)}") from e
 
                 wait_time = 2 ** attempt  # 指数退避: 1, 2, 4秒
                 await asyncio.sleep(wait_time)
@@ -79,7 +79,7 @@ class BailianService:
         tools: list[dict] | None = None,
         tool_choice: str | None = None,
     ) -> str:
-        """同步发送消息到百炼 API（无重试）
+        """同步发送消息到 MiniMax API（无重试）
 
         Args:
             session_id: 会话ID
@@ -89,7 +89,7 @@ class BailianService:
             tool_choice: 工具选择策略
 
         Returns:
-            百炼的响应文本
+            MiniMax 的响应文本
         """
         kwargs = {
             "model": self.model,
@@ -117,7 +117,7 @@ class BailianService:
         tools: list[dict] | None = None,
         tool_choice: str | None = None,
     ) -> Generator:
-        """流式发送消息到百炼 API
+        """流式发送消息到 MiniMax API
 
         Yields:
             当无 tools 时: str（文本片段）
@@ -149,5 +149,5 @@ class BailianService:
                 yield delta.content
 
 
-# 全局百炼服务实例
-bailian_service = BailianService()
+# 全局 MiniMax 服务实例
+minimax_service = MiniMaxService()

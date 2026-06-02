@@ -56,7 +56,12 @@ class OrchestratorAgent:
     """Orchestrator Agent - 负责任务拆解"""
 
     def __init__(self, adapter: IAgentAdapter | None = None):
-        self._adapter = adapter or get_agent_adapter()
+        if adapter is not None:
+            self._adapter = adapter
+        else:
+            from .session import AGENT_CONFIGS
+            provider = AGENT_CONFIGS.get("orchestrator", {}).get("llm_provider")
+            self._adapter = get_agent_adapter(provider)
 
     async def decompose(self, user_message: str) -> OrchestratorOutput:
         """拆解用户需求为任务列表，内置 Self-Correction"""

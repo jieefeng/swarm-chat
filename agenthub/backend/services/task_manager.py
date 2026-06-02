@@ -1,4 +1,4 @@
-"""TaskManager - 任务状态机 + DAG 调度"""
+"""TaskManager - 任务状态机 + DAG 调度 + SOP 守护"""
 import asyncio
 from collections import defaultdict, deque
 
@@ -8,6 +8,16 @@ from agenthub.backend.services.sse_manager import sse_manager
 
 
 MAX_RETRY = 3
+
+# SOP 规则：任务完成后自动触发的后续任务
+# key = 完成任务的 assigned_to，value = 自动创建的审查任务配置
+SOP_RULES: dict[str, dict] = {
+    "developer": {
+        "assigned_to": "qa",
+        "title_template": "审查: {original_title}",
+        "description_template": "请审查以下开发任务的代码质量和功能正确性：\n\n任务: {original_title}\n结果:\n{result}",
+    },
+}
 
 
 class TaskManager:
@@ -82,9 +92,11 @@ class TaskManager:
         return visited != len(self._tasks)
 
     async def execute_task(self, task: Task, adapter: IAgentAdapter | None = None) -> None:
-        """执行单个任务"""
+        """执行单个任务（按 assigned_to agent 的 llm_provider 选择 LLM）"""
         if adapter is None:
-            adapter = get_agent_adapter()
+            from .session import AGENT_CONFIGS
+            provider = AGENT_CONFIGS.get(task.assigned_to, {}).get("llm_provider")
+            adapter = get_agent_adapter(provider)
         async with self._lock:
             task.status = TaskStatus.RUNNING
         await sse_manager.broadcast("task_update", {"task_id": task.id, "status": task.status.value, "title": task.title})
@@ -97,6 +109,8 @@ class TaskManager:
                 task.result = result
                 task.status = TaskStatus.DONE
             await sse_manager.broadcast("task_update", {"task_id": task.id, "status": "done", "title": task.title})
+            # SOP 守护：任务完成后自动触发后续审查任务
+            await self._apply_sop(task)
         except Exception as e:
             async with self._lock:
                 task.retry_count += 1
@@ -105,6 +119,35 @@ class TaskManager:
                 else:
                     task.status = TaskStatus.FAILED
             await sse_manager.broadcast("task_update", {"task_id": task.id, "status": task.status.value, "title": task.title})
+
+    async def _apply_sop(self, completed_task: Task) -> None:
+        """SOP 守护：根据规则自动创建后续任务"""
+        rule = SOP_RULES.get(completed_task.assigned_to)
+        if rule is None:
+            return
+        # 避免重复触发：检查是否已有同名审查任务
+        follow_title = rule["title_template"].format(original_title=completed_task.title)
+        if follow_title in self._title_to_id:
+            return
+        follow_task = Task(
+            title=follow_title,
+            description=rule["description_template"].format(
+                original_title=completed_task.title,
+                result=(completed_task.result or "")[:2000],
+            ),
+            assigned_to=rule["assigned_to"],
+            depends_on=[completed_task.id],
+            priority=completed_task.priority,
+        )
+        async with self._lock:
+            self._tasks[follow_task.id] = follow_task
+            self._title_to_id[follow_title] = follow_task.id
+        await sse_manager.broadcast("task_created", {
+            "task_id": follow_task.id,
+            "title": follow_task.title,
+            "assigned_to": follow_task.assigned_to,
+            "trigger": "sop",
+        })
 
     async def execute_ready_tasks(self, adapter: IAgentAdapter | None = None) -> None:
         """并行执行所有就绪任务"""

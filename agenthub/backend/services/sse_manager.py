@@ -1,58 +1,78 @@
-"""SSE连接管理器 - 修复内存泄漏"""
+"""SSE连接管理器 - 支持线程隔离"""
 import asyncio
 import threading
-from typing import Dict, Set
+from typing import Dict, Optional
 from collections.abc import AsyncGenerator
 import json
 
 
 class SSEManager:
-    """管理Server-Sent Events连接"""
+    """管理Server-Sent Events连接
+
+    支持按 thread_id 过滤事件，实现线程隔离。
+    """
 
     def __init__(self):
-        self.subscribers: Set[asyncio.Queue] = set()
+        # subscribers: {queue: Optional[thread_id]}
+        self.subscribers: Dict[asyncio.Queue, Optional[str]] = {}
         self._lock = threading.Lock()
 
-    async def subscribe(self) -> AsyncGenerator[dict, None]:
-        """订阅SSE事件流"""
+    async def subscribe(self, thread_id: Optional[str] = None) -> AsyncGenerator[dict, None]:
+        """订阅SSE事件流
+
+        Args:
+            thread_id: 订阅指定线程的事件。None 表示接收所有事件。
+        """
         queue: asyncio.Queue = asyncio.Queue()
         with self._lock:
-            self.subscribers.add(queue)
-        print(f"[SSE SUBSCRIBE] Subscriber added. Total: {len(self.subscribers)}")
+            self.subscribers[queue] = thread_id
+        print(f"[SSE SUBSCRIBE] Subscriber added (thread_id={thread_id}). Total: {len(self.subscribers)}")
 
         try:
             while True:
                 try:
                     event = await asyncio.wait_for(queue.get(), timeout=30)
-                    print(f"[SSE SUBSCRIBE] Got event from queue: {str(event)[:100]}...")
                     yield event
                 except asyncio.TimeoutError:
                     yield {"event": "keepalive", "data": json.dumps({"status": "ping"})}
         finally:
             with self._lock:
-                self.subscribers.remove(queue)
+                del self.subscribers[queue]
             print(f"[SSE SUBSCRIBE] Subscriber removed. Total: {len(self.subscribers)}")
 
-    async def broadcast(self, event_type: str, data: dict):
-        """广播事件到所有订阅者
+    async def broadcast(self, event_type: str, data: dict, thread_id: Optional[str] = None):
+        """广播事件到订阅者
 
-        data 会被 JSON 序列化为 string，确保 sse-starlette 正确格式化。
+        Args:
+            event_type: 事件类型
+            data: 事件数据
+            thread_id: 线程 ID。如果指定，只发给订阅了该线程的客户端。
         """
         data_str = json.dumps(data, ensure_ascii=False)
-        print(f"[SSE BROADCAST] type={event_type}, data={data_str[:200]}")
+        print(f"[SSE BROADCAST] type={event_type}, thread_id={thread_id}, data={data_str[:200]}")
         event = {"event": event_type, "data": data_str}
-        with self._lock:
-            for queue in self.subscribers:
-                await queue.put(event)
 
-    async def broadcast_stream_chunk(self, message_id: str, chunk: str, seq: int) -> None:
+        # 过滤逻辑：
+        # - subscriber_thread_id=None: 接收所有事件
+        # - subscriber_thread_id=thread_id: 只接收该线程的事件
+        # - thread_id=None: 全局事件，所有订阅者都能收到
+        # Copy targets under lock, then release and iterate
+        with self._lock:
+            targets = [
+                q for q, sid in self.subscribers.items()
+                if sid is None or thread_id is None or sid == thread_id
+            ]
+        for queue in targets:
+            await queue.put(event)
+
+    async def broadcast_stream_chunk(self, message_id: str, chunk: str, seq: int,
+                                      thread_id: Optional[str] = None) -> None:
         """广播流式文本片段"""
-        print(f"[SSE STREAM_CHUNK] Broadcasting chunk #{seq} for message_id={message_id}, chunk={repr(chunk[:50])}")
         await self.broadcast("stream_chunk", {
             "message_id": message_id,
             "chunk": chunk,
             "seq": seq,
-        })
+        }, thread_id=thread_id)
 
     async def broadcast_task_created(self, task_id: str, title: str, assigned_to: str) -> None:
         """广播任务创建事件"""
@@ -78,19 +98,38 @@ class SSEManager:
             "options": options,
         })
 
-    async def broadcast_artifact_diff(self, task_id: str, file_path: str, old_content: str, new_content: str) -> None:
-        """广播代码 Diff"""
-        await self.broadcast("artifact_diff", {
-            "task_id": task_id,
-            "file_path": file_path,
-            "old_content": old_content,
-            "new_content": new_content,
-        })
-
     def get_subscriber_count(self) -> int:
         """获取当前订阅者数量"""
         with self._lock:
             return len(self.subscribers)
+
+    async def broadcast_tool_start(self, agent_id: str, command: str,
+                                    message_id: str, thread_id: str | None = None) -> None:
+        """广播工具开始执行事件"""
+        await self.broadcast("tool_start", {
+            "agent_id": agent_id,
+            "command": command,
+            "message_id": message_id,
+        }, thread_id=thread_id)
+
+    async def broadcast_tool_progress(self, agent_id: str, output: str,
+                                       message_id: str, thread_id: str | None = None) -> None:
+        """广播工具执行进度"""
+        await self.broadcast("tool_progress", {
+            "agent_id": agent_id,
+            "output": output,
+            "message_id": message_id,
+        }, thread_id=thread_id)
+
+    async def broadcast_tool_result(self, agent_id: str, content: str, success: bool,
+                                     message_id: str, thread_id: str | None = None) -> None:
+        """广播工具执行结果"""
+        await self.broadcast("tool_result", {
+            "agent_id": agent_id,
+            "content": content,
+            "success": success,
+            "message_id": message_id,
+        }, thread_id=thread_id)
 
 
 # 全局SSE管理器实例

@@ -1,4 +1,4 @@
-import type { Agent, Message, SendMessageResponse } from "./types";
+import type { Agent, AgentConfig, Message, SendMessageResponse } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:7005";
 const API_KEY = process.env.NEXT_PUBLIC_API_KEY || "";
@@ -35,6 +35,56 @@ export const api = {
 
   async getAgents(): Promise<{ agents: Agent[] }> {
     const res = await fetch(`${API_BASE}/api/agents`, { headers });
+    return res.json();
+  },
+
+  async getLLMConfig(): Promise<Record<string, { llm_provider: string }>> {
+    const res = await fetch(`${API_BASE}/api/agents/llm-config`, { headers });
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+    return res.json();
+  },
+
+  async updateLLMConfig(
+    agentId: string,
+    provider: string,
+  ): Promise<{ agent_id: string; llm_provider: string }> {
+    const res = await fetch(`${API_BASE}/api/agents/${agentId}/llm-config`, {
+      method: "PUT",
+      headers,
+      body: JSON.stringify({ llm_provider: provider }),
+    });
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.detail || `HTTP ${res.status}`);
+    }
+    return res.json();
+  },
+
+  async getAgentConfig(agentId: string): Promise<AgentConfig> {
+    const res = await fetch(`${API_BASE}/api/agents/${agentId}/config`, {
+      headers,
+    });
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+    return res.json();
+  },
+
+  async updateAgentConfig(
+    agentId: string,
+    config: { llm_provider?: string; model?: string },
+  ): Promise<AgentConfig> {
+    const res = await fetch(`${API_BASE}/api/agents/${agentId}/config`, {
+      method: "PUT",
+      headers,
+      body: JSON.stringify(config),
+    });
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.detail || `HTTP ${res.status}`);
+    }
     return res.json();
   },
 };

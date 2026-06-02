@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { AgentList } from "@/components/agents/AgentList";
 import { MessageInput } from "@/components/chat/MessageInput";
 import { MessageList } from "@/components/chat/MessageList";
+import { ModelEditor } from "@/components/chat/ModelEditor";
 import { api } from "@/lib/api";
 import { useChatStream } from "@/lib/hooks/useChatStream";
 import { useAgentStore } from "@/lib/stores/agentStore";
@@ -12,6 +13,7 @@ import { useMessageStore } from "@/lib/stores/messageStore";
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:7005";
 
 export default function HomePage() {
+  const [activeAgentId, setActiveAgentId] = useState<string | null>(null);
   const agents = useAgentStore((s) => s.agents);
   const setAgents = useAgentStore((s) => s.setAgents);
   const messages = useMessageStore((s) => s.messages);
@@ -19,6 +21,14 @@ export default function HomePage() {
     agentId: null,
     baseUrl: API_BASE,
   });
+
+  const handleSendMessage = (content: string) => {
+    const mentionMatch = content.match(/@(\w+)/);
+    if (mentionMatch?.[1]) {
+      setActiveAgentId(mentionMatch[1]);
+    }
+    sendMessage(content);
+  };
 
   useEffect(() => {
     // 加载初始数据
@@ -44,7 +54,27 @@ export default function HomePage() {
     <div className="flex flex-col h-screen">
       {/* Header */}
       <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 bg-white">
-        <h1 className="text-xl font-semibold">🐉 AgentHub · 五行神兽</h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-xl font-semibold">🐉 AgentHub · 五行神兽</h1>
+          {agents.length > 0 && (
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-gray-400">|</span>
+              <span className="text-gray-500">当前模型:</span>
+              <ModelEditor
+                agentId={
+                  activeAgentId && agents.some((a) => a.id === activeAgentId)
+                    ? activeAgentId
+                    : agents[0]!.id
+                }
+                agentName={
+                  (activeAgentId &&
+                    agents.find((a) => a.id === activeAgentId)?.name) ||
+                  agents[0]!.name
+                }
+              />
+            </div>
+          )}
+        </div>
         <div className="text-sm text-gray-500">
           {connectionState === "connected"
             ? "🟢 已连接"
@@ -60,7 +90,7 @@ export default function HomePage() {
         <div className="flex-1 flex flex-col">
           <MessageList messages={messages} agentId={null} />
           <MessageInput
-            onSubmit={sendMessage}
+            onSubmit={handleSendMessage}
             disabled={connectionState === "connecting"}
             mentionCandidates={agents.map((a) => ({
               id: a.id,

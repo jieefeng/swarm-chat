@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { extractHtmlFromMarkdown, processHtml, extractTitle } from "../preview";
+import { describe, expect, it } from "vitest";
+import { extractHtmlFromMarkdown, extractTitle, processHtml } from "../preview";
 
 describe("extractHtmlFromMarkdown", () => {
   it("从 html 代码块中提取", () => {
@@ -9,7 +9,9 @@ describe("extractHtmlFromMarkdown", () => {
 
   it("提取完整 HTML 文档", () => {
     const content = "前文\n<!DOCTYPE html><html><body>Test</body></html>\n后文";
-    expect(extractHtmlFromMarkdown(content)).toBe("<!DOCTYPE html><html><body>Test</body></html>");
+    expect(extractHtmlFromMarkdown(content)).toBe(
+      "<!DOCTYPE html><html><body>Test</body></html>",
+    );
   });
 
   it("无 HTML 时返回 null", () => {
