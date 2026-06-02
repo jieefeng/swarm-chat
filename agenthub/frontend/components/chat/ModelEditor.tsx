@@ -15,6 +15,7 @@ export function ModelEditor({ agentId, agentName }: ModelEditorProps) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const isCancelling = useRef(false);
 
   useEffect(() => {
     const loadConfig = async () => {
@@ -43,8 +44,10 @@ export function ModelEditor({ agentId, agentName }: ModelEditorProps) {
       await api.updateAgentConfig(agentId, { model: model || undefined });
       setSuccess(true);
       setTimeout(() => setSuccess(false), 2000);
+      setIsEditing(false);  // 保存成功后才退出
     } catch (err) {
       setError(err instanceof Error ? err.message : "保存失败");
+      // 保持编辑模式，让用户看到错误
     } finally {
       setIsLoading(false);
     }
@@ -53,8 +56,8 @@ export function ModelEditor({ agentId, agentName }: ModelEditorProps) {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       handleSave();
-      setIsEditing(false);
     } else if (e.key === "Escape") {
+      isCancelling.current = true;
       setIsEditing(false);
     }
   };
@@ -68,8 +71,10 @@ export function ModelEditor({ agentId, agentName }: ModelEditorProps) {
           value={model}
           onChange={(e) => setModel(e.target.value)}
           onBlur={() => {
-            handleSave();
-            setIsEditing(false);
+            if (!isCancelling.current) {
+              handleSave();
+            }
+            isCancelling.current = false;
           }}
           onKeyDown={handleKeyDown}
           placeholder="输入模型名称"
