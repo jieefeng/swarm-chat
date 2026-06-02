@@ -104,3 +104,30 @@ export interface AgentConfig {
   llm_provider: string;
   model: string | null;
 }
+
+// Tool execution types
+export interface ToolExecution {
+  id: string;
+  command: string;
+  status: "running" | "success" | "error";
+  output?: string;
+}
+
+export interface ToolStartEvent {
+  agent_id: string;
+  command: string;
+  message_id: string;
+}
+
+export interface ToolProgressEvent {
+  agent_id: string;
+  output: string;
+  message_id: string;
+}
+
+export interface ToolResultEvent {
+  agent_id: string;
+  content: string;
+  success: boolean;
+  message_id: string;
+}
