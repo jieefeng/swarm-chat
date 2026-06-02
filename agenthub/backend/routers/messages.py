@@ -218,7 +218,20 @@ async def send_message(req: SendMessageRequest):
 
             def _produce():
                 try:
-                    for chunk in session_manager.send_to_agent_stream(agent_id, agent_message):
+                    for chunk in session_manager.send_to_agent_stream(
+                        agent_id,
+                        agent_message,
+                        thread_id=req.thread_id,
+                        on_tool_start=lambda aid, cmd, thread_id=None: queue.put_nowait(
+                            ("_tool_start", aid, cmd, thread_id)
+                        ),
+                        on_tool_progress=lambda aid, out, thread_id=None: queue.put_nowait(
+                            ("_tool_progress", aid, out, thread_id)
+                        ),
+                        on_tool_result=lambda aid, content, success, thread_id=None: queue.put_nowait(
+                            ("_tool_result", aid, content, success, thread_id)
+                        ),
+                    ):
                         queue.put_nowait(chunk)
                 except Exception as e:
                     queue.put_nowait(e)
@@ -236,6 +249,18 @@ async def send_message(req: SendMessageRequest):
                     break
                 if isinstance(item, Exception):
                     raise item
+                if isinstance(item, tuple):
+                    event_type = item[0]
+                    if event_type == "_tool_start":
+                        _, aid, cmd, tid = item
+                        await sse_manager.broadcast_tool_start(aid, cmd, message_id, thread_id=tid)
+                    elif event_type == "_tool_progress":
+                        _, aid, out, tid = item
+                        await sse_manager.broadcast_tool_progress(aid, out, message_id, thread_id=tid)
+                    elif event_type == "_tool_result":
+                        _, aid, content, success, tid = item
+                        await sse_manager.broadcast_tool_result(aid, content, success, message_id, thread_id=tid)
+                    continue
                 full_response += item
                 print(f"[STREAM] Got chunk #{seq}: {repr(item[:50])}")
                 await sse_manager.broadcast_stream_chunk(message_id, item, seq)
