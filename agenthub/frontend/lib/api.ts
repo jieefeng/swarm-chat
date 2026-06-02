@@ -1,4 +1,4 @@
-import type { Agent, Message, SendMessageResponse } from "./types";
+import type { Agent, AgentConfig, Message, SendMessageResponse } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:7005";
 const API_KEY = process.env.NEXT_PUBLIC_API_KEY || "";
@@ -8,26 +8,8 @@ const headers = {
   "X-API-Key": API_KEY,
 };
 
-export async function createThread(title: string, description?: string) {
-  const response = await fetch(`${API_BASE}/api/threads`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-API-Key": API_KEY,
-    },
-    body: JSON.stringify({ title, description }),
-  });
-  if (!response.ok) {
-    throw new Error(`Failed to create thread: ${response.status}`);
-  }
-  return response.json();
-}
-
 export const api = {
-  async sendMessage(
-    content: string,
-    threadId?: string | null,
-  ): Promise<SendMessageResponse> {
+  async sendMessage(content: string): Promise<SendMessageResponse> {
     const res = await fetch(`${API_BASE}/api/messages`, {
       method: "POST",
       headers,
@@ -35,7 +17,6 @@ export const api = {
         content,
         sender: "user",
         sender_name: "用户",
-        ...(threadId ? { thread_id: threadId } : {}),
       }),
     });
     if (!res.ok) {
@@ -73,6 +54,30 @@ export const api = {
       method: "PUT",
       headers,
       body: JSON.stringify({ llm_provider: provider }),
+    });
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.detail || `HTTP ${res.status}`);
+    }
+    return res.json();
+  },
+
+  async getAgentConfig(agentId: string): Promise<AgentConfig> {
+    const res = await fetch(`${API_BASE}/api/agents/${agentId}/config`, { headers });
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+    return res.json();
+  },
+
+  async updateAgentConfig(
+    agentId: string,
+    config: { llm_provider?: string; model?: string },
+  ): Promise<AgentConfig> {
+    const res = await fetch(`${API_BASE}/api/agents/${agentId}/config`, {
+      method: "PUT",
+      headers,
+      body: JSON.stringify(config),
     });
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));

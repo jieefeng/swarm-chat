@@ -98,3 +98,9 @@ export interface ArtifactDiffEvent {
   old_content: string;
   new_content: string;
 }
+
+export interface AgentConfig {
+  agent_id: string;
+  llm_provider: string;
+  model: string | null;
+}
