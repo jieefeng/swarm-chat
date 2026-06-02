@@ -112,7 +112,7 @@ AGENT_CONFIGS: Dict[str, Dict[str, str]] = {
         "name": "炎翎",
         "beast": "朱雀",
         "role": "qa",
-        "llm_provider": "anthropic",
+        "llm_provider": "bailian",
         "system_prompt": _build_system_prompt("qa", "你是一位专业的 QA 工程师。审查开发者提交的代码，验证功能正确性、边界情况和代码质量。输出验证报告，标明通过/失败及原因。"),
     },
     "orchestrator": {
@@ -152,6 +152,8 @@ class SessionManager:
     def send_to_agent(self, agent_id: str, message: str) -> str:
         """发送消息到指定Agent（按 agent 配置的 llm_provider 选择 LLM）
 
+        优先从数据库读取 provider 和 model，回退到 AGENT_CONFIGS 默认值
+
         Args:
             agent_id: Agent ID
             message: 消息内容
@@ -160,17 +162,23 @@ class SessionManager:
             LLM 响应文本
         """
         from .llm_router import get_llm_service_for_provider
+        from .llm_config_db import LLMConfigDB
 
         config = AGENT_CONFIGS.get(agent_id)
         if not config:
             return f"Error: Unknown agent {agent_id}"
 
         system_prompt = config.get("system_prompt", "")
-        provider = config.get("llm_provider", "bailian")
+
+        # 从数据库读取 provider 和 model，回退到默认值
+        db = LLMConfigDB()
+        provider = db.get_provider(agent_id) or config.get("llm_provider", "bailian")
+        model = db.get_model(agent_id)  # None 时使用默认模型
+
         session_id = f"session_{agent_id}"
 
         try:
-            llm = get_llm_service_for_provider(provider)
+            llm = get_llm_service_for_provider(provider, model=model)
             response = llm.send_message(
                 session_id=session_id,
                 message=message,
@@ -183,6 +191,8 @@ class SessionManager:
     def send_to_agent_stream(self, agent_id: str, message: str) -> Iterator[str]:
         """流式发送消息到指定Agent，逐个 yield 文本片段
 
+        优先从数据库读取 provider 和 model，回退到 AGENT_CONFIGS 默认值
+
         Args:
             agent_id: Agent ID
             message: 消息内容
@@ -191,6 +201,7 @@ class SessionManager:
             LLM 响应的文本片段
         """
         from .llm_router import get_llm_service_for_provider
+        from .llm_config_db import LLMConfigDB
 
         config = AGENT_CONFIGS.get(agent_id)
         if not config:
@@ -198,11 +209,16 @@ class SessionManager:
             return
 
         system_prompt = config.get("system_prompt", "")
-        provider = config.get("llm_provider", "bailian")
+
+        # 从数据库读取 provider 和 model，回退到默认值
+        db = LLMConfigDB()
+        provider = db.get_provider(agent_id) or config.get("llm_provider", "bailian")
+        model = db.get_model(agent_id)  # None 时使用默认模型
+
         session_id = f"session_{agent_id}"
 
         try:
-            llm = get_llm_service_for_provider(provider)
+            llm = get_llm_service_for_provider(provider, model=model)
             yield from llm.send_message_stream(
                 session_id=session_id,
                 message=message,
