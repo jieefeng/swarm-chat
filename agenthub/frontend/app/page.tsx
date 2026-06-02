@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { AgentList } from "@/components/agents/AgentList";
 import { MessageInput } from "@/components/chat/MessageInput";
 import { MessageList } from "@/components/chat/MessageList";
-import { ThreadList } from "@/components/threads/ThreadList";
-import { api, createThread } from "@/lib/api";
+import { ModelEditor } from "@/components/chat/ModelEditor";
+import { api } from "@/lib/api";
 import { useChatStream } from "@/lib/hooks/useChatStream";
 import { useAgentStore } from "@/lib/stores/agentStore";
 import { useMessageStore } from "@/lib/stores/messageStore";
@@ -13,29 +13,13 @@ import { useMessageStore } from "@/lib/stores/messageStore";
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:7005";
 
 export default function HomePage() {
-  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
-  // TODO: #3 - Load message history when activeThreadId changes
-  // Currently messages only load on mount. Need useEffect to fetch
-  // /api/threads/${activeThreadId}/messages and update messageStore
-  // when the user switches threads.
   const agents = useAgentStore((s) => s.agents);
   const setAgents = useAgentStore((s) => s.setAgents);
   const messages = useMessageStore((s) => s.messages);
   const { sendMessage, connectionState, lastError } = useChatStream({
     agentId: null,
     baseUrl: API_BASE,
-    threadId: activeThreadId,
   });
-
-  const handleCreateThread = async (title: string, description?: string) => {
-    try {
-      const thread = await createThread(title, description);
-      setActiveThreadId(thread.id);
-    } catch (error) {
-      console.error("Failed to create thread:", error);
-      // TODO: add toast notification for user feedback
-    }
-  };
 
   useEffect(() => {
     // 加载初始数据
@@ -61,7 +45,16 @@ export default function HomePage() {
     <div className="flex flex-col h-screen">
       {/* Header */}
       <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 bg-white">
-        <h1 className="text-xl font-semibold">🐉 AgentHub · 五行神兽</h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-xl font-semibold">🐉 AgentHub · 五行神兽</h1>
+          {agents.length > 0 && (
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-gray-400">|</span>
+              <span className="text-gray-500">当前模型:</span>
+              <ModelEditor agentId={agents[0].id} agentName={agents[0].name} />
+            </div>
+          )}
+        </div>
         <div className="text-sm text-gray-500">
           {connectionState === "connected"
             ? "🟢 已连接"
@@ -73,15 +66,6 @@ export default function HomePage() {
 
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
-        {/* 左侧线程列表 */}
-        <div className="w-64 border-r border-gray-200 bg-gray-50">
-          <ThreadList
-            activeThreadId={activeThreadId}
-            onSelectThread={setActiveThreadId}
-            onCreateThread={handleCreateThread}
-          />
-        </div>
-
         <AgentList agents={agents} />
         <div className="flex-1 flex flex-col">
           <MessageList messages={messages} agentId={null} />
