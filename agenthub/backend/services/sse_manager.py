@@ -103,6 +103,34 @@ class SSEManager:
         with self._lock:
             return len(self.subscribers)
 
+    async def broadcast_tool_start(self, agent_id: str, command: str,
+                                    message_id: str, thread_id: str | None = None) -> None:
+        """广播工具开始执行事件"""
+        await self.broadcast("tool_start", {
+            "agent_id": agent_id,
+            "command": command,
+            "message_id": message_id,
+        }, thread_id=thread_id)
+
+    async def broadcast_tool_progress(self, agent_id: str, output: str,
+                                       message_id: str, thread_id: str | None = None) -> None:
+        """广播工具执行进度"""
+        await self.broadcast("tool_progress", {
+            "agent_id": agent_id,
+            "output": output,
+            "message_id": message_id,
+        }, thread_id=thread_id)
+
+    async def broadcast_tool_result(self, agent_id: str, content: str, success: bool,
+                                     message_id: str, thread_id: str | None = None) -> None:
+        """广播工具执行结果"""
+        await self.broadcast("tool_result", {
+            "agent_id": agent_id,
+            "content": content,
+            "success": success,
+            "message_id": message_id,
+        }, thread_id=thread_id)
+
 
 # 全局SSE管理器实例
 sse_manager = SSEManager()
