@@ -23,15 +23,27 @@ export function AgentConfigModal({ agent, onClose, onSave }: AgentConfigModalPro
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  useEffect(() => {
+    let cancelled = false;
     api.getAgentConfig(agent.id).then((data) => {
+      if (cancelled) return;
       setConfig(data);
       setModelInput(data.model || "");
       setLoading(false);
     }).catch((err) => {
+      if (cancelled) return;
       console.error("Failed to load config:", err);
       setError("加载配置失败");
       setLoading(false);
     });
+    return () => { cancelled = true; };
   }, [agent.id]);
 
   const handleSave = async () => {
@@ -89,10 +101,12 @@ export function AgentConfigModal({ agent, onClose, onSave }: AgentConfigModalPro
                 type="text"
                 value={modelInput}
                 onChange={(e) => setModelInput(e.target.value)}
-                placeholder={config?.model || "留空使用默认模型"}
+                placeholder="留空使用默认模型"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
-              <p className="mt-1 text-xs text-gray-500">留空则使用默认模型</p>
+              <p className="mt-1 text-xs text-gray-500">
+                {config?.model ? `当前模型: ${config.model}` : "使用默认模型"}
+              </p>
             </div>
 
             {/* 错误提示 */}
