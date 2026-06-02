@@ -1,7 +1,11 @@
 """会话服务 - Agent配置和会话管理"""
-from typing import Dict, Iterator, Optional
+import json
+import os
+from typing import Callable, Dict, Iterator, Optional
 
 from .agent_identity import get_identity, get_system_prompt_suffix
+from .claude_code_service import claude_code_service
+from .tools import CLAUDE_CODE_TOOL
 
 
 # 四条铁律（Hard Rails）— 所有 Agent 共享的安全底线
@@ -188,18 +192,17 @@ class SessionManager:
         except Exception as e:
             return f"Error: {str(e)}"
 
-    def send_to_agent_stream(self, agent_id: str, message: str) -> Iterator[str]:
-        """流式发送消息到指定Agent，逐个 yield 文本片段
-
-        优先从数据库读取 provider 和 model，回退到 AGENT_CONFIGS 默认值
-
-        Args:
-            agent_id: Agent ID
-            message: 消息内容
-
-        Yields:
-            LLM 响应的文本片段
-        """
+    def send_to_agent_stream(
+        self,
+        agent_id: str,
+        message: str,
+        message_history: list[dict] | None = None,
+        thread_id: str | None = None,
+        on_tool_start: Callable | None = None,
+        on_tool_progress: Callable | None = None,
+        on_tool_result: Callable | None = None,
+    ) -> Iterator[str]:
+        """流式发送消息到指定Agent，支持 tool_calls 循环"""
         from .llm_router import get_llm_service_for_provider
         from .llm_config_db import LLMConfigDB
 
@@ -210,20 +213,100 @@ class SessionManager:
 
         system_prompt = config.get("system_prompt", "")
 
-        # 从数据库读取 provider 和 model，回退到默认值
         db = LLMConfigDB()
         provider = db.get_provider(agent_id) or config.get("llm_provider", "bailian")
-        model = db.get_model(agent_id)  # None 时使用默认模型
+        model = db.get_model(agent_id)
 
         session_id = f"session_{agent_id}"
+        cc_model = db.get_model(agent_id) or os.getenv("CLAUDE_CODE_MODEL", "")
+        tools = [CLAUDE_CODE_TOOL] if claude_code_service.is_available() else None
+        max_rounds = int(os.getenv("CLAUDE_CODE_MAX_ROUNDS", "3"))
 
         try:
             llm = get_llm_service_for_provider(provider, model=model)
-            yield from llm.send_message_stream(
-                session_id=session_id,
-                message=message,
-                system_prompt=system_prompt
-            )
+
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": message},
+            ]
+
+            for round_num in range(max_rounds + 1):
+                accumulated_content = ""
+                tool_calls_map: dict[str, dict] = {}
+
+                for chunk in llm.send_message_stream(
+                    session_id=session_id,
+                    message="",
+                    system_prompt="",
+                    tools=tools,
+                    tool_choice="auto" if tools else None,
+                ):
+                    if tools and hasattr(chunk, "choices") and chunk.choices:
+                        delta = chunk.choices[0].delta
+                        if delta.content:
+                            accumulated_content += delta.content
+                            yield delta.content
+                        if delta.tool_calls:
+                            for tc in delta.tool_calls:
+                                tc_id = tc.id or ""
+                                if tc_id not in tool_calls_map:
+                                    tool_calls_map[tc_id] = {"name": "", "arguments": ""}
+                                if tc.function:
+                                    if tc.function.name:
+                                        tool_calls_map[tc_id]["name"] = tc.function.name
+                                    if tc.function.arguments:
+                                        tool_calls_map[tc_id]["arguments"] += tc.function.arguments
+                    else:
+                        if isinstance(chunk, str):
+                            accumulated_content += chunk
+                            yield chunk
+
+                if not tool_calls_map:
+                    break
+
+                for tc_id, tc_info in tool_calls_map.items():
+                    try:
+                        prompt = json.loads(tc_info["arguments"]).get("prompt", "")
+                    except (json.JSONDecodeError, AttributeError):
+                        yield f"\n[错误: 无法解析 tool_call 参数]\n"
+                        continue
+
+                    if not prompt:
+                        continue
+
+                    if on_tool_start:
+                        on_tool_start(agent_id, prompt, thread_id=thread_id)
+
+                    result = claude_code_service.execute(
+                        prompt,
+                        model=cc_model,
+                        on_progress=(lambda output: on_tool_progress(agent_id, output, thread_id=thread_id))
+                        if on_tool_progress
+                        else None,
+                    )
+
+                    if on_tool_result:
+                        on_tool_result(agent_id, result.output, result.success, thread_id=thread_id)
+
+                    messages.append({
+                        "role": "assistant",
+                        "tool_calls": [{
+                            "id": tc_id,
+                            "type": "function",
+                            "function": {
+                                "name": tc_info["name"],
+                                "arguments": tc_info["arguments"],
+                            },
+                        }],
+                    })
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tc_id,
+                        "content": result.output if result.success else f"Error: {result.error}",
+                    })
+
+                session_id = f"session_{agent_id}_tool_{round_num}"
+
         except Exception as e:
             yield f"Error: {str(e)}"
 
