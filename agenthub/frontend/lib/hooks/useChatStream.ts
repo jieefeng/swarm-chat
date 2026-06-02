@@ -46,6 +46,8 @@ export function useChatStream(
   const upsertMessage = useMessageStore((s) => s.upsertMessage);
   const appendStreamChunk = useMessageStore((s) => s.appendStreamChunk);
   const setStreaming = useMessageStore((s) => s.setStreaming);
+  const addToolExecution = useMessageStore((s) => s.addToolExecution);
+  const updateToolExecution = useMessageStore((s) => s.updateToolExecution);
   const addTask = useTaskStore((s) => s.addTask);
   const updateTaskStatus = useTaskStore((s) => s.updateTaskStatus);
 
@@ -195,6 +197,44 @@ export function useChatStream(
             type: "agent",
           });
         },
+        onToolStart: (data) => {
+          console.log("[DEBUG] SSE onToolStart:", data.command);
+          addToolExecution(data.message_id, {
+            id: `tool-${Date.now()}`,
+            command: data.command,
+            status: "running",
+          });
+        },
+        onToolProgress: (data) => {
+          console.log(
+            "[DEBUG] SSE onToolProgress:",
+            data.output?.substring(0, 50),
+          );
+          const tools =
+            useMessageStore.getState().toolExecutions[data.message_id] || [];
+          const runningTool = [...tools]
+            .reverse()
+            .find((t) => t.status === "running");
+          if (runningTool) {
+            updateToolExecution(data.message_id, runningTool.id, {
+              output: (runningTool.output || "") + data.output,
+            });
+          }
+        },
+        onToolResult: (data) => {
+          console.log("[DEBUG] SSE onToolResult:", data.success);
+          const tools =
+            useMessageStore.getState().toolExecutions[data.message_id] || [];
+          const runningTool = [...tools]
+            .reverse()
+            .find((t) => t.status === "running");
+          if (runningTool) {
+            updateToolExecution(data.message_id, runningTool.id, {
+              status: data.success ? "success" : "error",
+              output: data.content,
+            });
+          }
+        },
       });
 
       connectionRef.current = conn;
@@ -240,6 +280,8 @@ export function useChatStream(
       disconnect,
       addTask,
       updateTaskStatus,
+      addToolExecution,
+      updateToolExecution,
     ],
   );
 
