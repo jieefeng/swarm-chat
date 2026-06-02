@@ -75,7 +75,9 @@ class BailianService:
         self,
         session_id: str,
         message: str,
-        system_prompt: str = ""
+        system_prompt: str = "",
+        tools: list[dict] | None = None,
+        tool_choice: str | None = None,
     ) -> str:
         """同步发送消息到百炼 API（无重试）
 
@@ -83,45 +85,68 @@ class BailianService:
             session_id: 会话ID
             message: 用户消息
             system_prompt: 系统提示
+            tools: 工具定义列表（OpenAI function calling 格式）
+            tool_choice: 工具选择策略
 
         Returns:
             百炼的响应文本
         """
-        response = self.client.chat.completions.create(
-            model=self.model,
-            max_tokens=1024,
-            messages=[
+        kwargs = {
+            "model": self.model,
+            "max_tokens": 4096,
+            "messages": [
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": message}
+                {"role": "user", "content": message},
             ],
-            timeout=self.default_timeout
-        )
-        return response.choices[0].message.content
+            "timeout": self.default_timeout,
+        }
+        if tools:
+            kwargs["tools"] = tools
+        if tool_choice:
+            kwargs["tool_choice"] = tool_choice
+
+        response = self.client.chat.completions.create(**kwargs)
+        msg = response.choices[0].message
+        return msg.content or ""
 
     def send_message_stream(
         self,
         session_id: str,
         message: str,
-        system_prompt: str = ""
-    ) -> Generator[str, None, None]:
-        """流式发送消息到百炼 API，逐个 yield 文本片段
+        system_prompt: str = "",
+        tools: list[dict] | None = None,
+        tool_choice: str | None = None,
+    ) -> Generator:
+        """流式发送消息到百炼 API
 
         Yields:
-            LLM 响应的文本片段
+            当无 tools 时: str（文本片段）
+            当有 tools 时: ChatCompletionChunk 对象（需检查 .delta.tool_calls）
         """
-        stream = self.client.chat.completions.create(
-            model=self.model,
-            max_tokens=1024,
-            messages=[
+        kwargs = {
+            "model": self.model,
+            "max_tokens": 4096,
+            "messages": [
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": message}
+                {"role": "user", "content": message},
             ],
-            timeout=self.default_timeout,
-            stream=True
-        )
+            "timeout": self.default_timeout,
+            "stream": True,
+        }
+        if tools:
+            kwargs["tools"] = tools
+        if tool_choice:
+            kwargs["tool_choice"] = tool_choice
+
+        stream = self.client.chat.completions.create(**kwargs)
         for chunk in stream:
-            if chunk.choices and chunk.choices[0].delta.content:
-                yield chunk.choices[0].delta.content
+            if not chunk.choices:
+                continue
+            delta = chunk.choices[0].delta
+            if tools:
+                yield chunk
+            elif delta.content:
+                yield delta.content
 
 
 # 全局百炼服务实例
