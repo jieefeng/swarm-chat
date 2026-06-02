@@ -25,6 +25,9 @@ class A2ARouter:
     # @mention 正则：匹配 @agent_id 或 @agent_name（不匹配 email 中的 @）
     MENTION_PATTERN = re.compile(r"(?<!\w)@(\w+)")
 
+    # handoff 正则：匹配 [HANDOFF:agent_id] 或 [HANDOFF:agent_id:reason]
+    HANDOFF_PATTERN = re.compile(r"\[HANDOFF:(\w+)(?::([^\]]+))?\]")
+
     def __init__(self):
         # 构建 name → id 映射
         self._name_to_id: dict[str, str] = {}
@@ -55,6 +58,46 @@ class A2ARouter:
         # 清理消息内容（移除 @mention）
         cleaned = self.MENTION_PATTERN.sub("", content).strip()
         return cleaned, mentions
+
+    def detect_handoff(self, content: str) -> tuple[str, str | None] | None:
+        """检测响应中的 handoff 标记
+
+        Args:
+            content: agent 的响应内容
+
+        Returns:
+            (target_agent_id, reason) or None if no handoff detected
+        """
+        match = self.HANDOFF_PATTERN.search(content)
+        if match:
+            target = match.group(1).lower()
+            reason = match.group(2)
+            if target in AGENT_CONFIGS:
+                return target, reason
+        return None
+
+    async def execute_handoff(self, from_agent: str, to_agent: str,
+                              thread_id: str, reason: str | None = None):
+        """执行 handoff — 从一个 agent 交给另一个 agent
+
+        Args:
+            from_agent: 来源 agent ID
+            to_agent: 目标 agent ID
+            thread_id: 线程 ID
+            reason: handoff 原因（可选）
+        """
+        from_name = AGENT_CONFIGS.get(from_agent, {}).get("name", from_agent)
+        reason_text = f": {reason}" if reason else ""
+        handoff_message = f"[来自 {from_name} 的 handoff{reason_text}]"
+
+        logger.info(f"Handoff: {from_agent} → {to_agent} (thread={thread_id})")
+
+        await self.deliver_to_agent(
+            agent_id=to_agent,
+            thread_id=thread_id,
+            message=handoff_message,
+            from_agent=from_agent,
+        )
 
     async def route_message(self, thread_id: str, content: str,
                             agent_id: Optional[str] = None) -> list[str]:
@@ -148,23 +191,57 @@ class A2ARouter:
                 await sse_manager.broadcast_stream_chunk(message_id, item, seq)
                 seq += 1
 
-            # 存储 agent 响应到线程
-            await thread_manager.add_message(
-                thread_id=thread_id,
-                sender_id=agent_id,
-                content=full_response,
-            )
+            # 检测 handoff
+            handoff = self.detect_handoff(full_response)
 
-            # 广播完整消息事件
-            await sse_manager.broadcast("message", {
-                "id": message_id,
-                "thread_id": thread_id,
-                "sender": agent_id,
-                "sender_name": agent_name,
-                "content": full_response,
-                "timestamp": datetime.now(tz=timezone.utc).isoformat(),
-                "type": "agent",
-            }, thread_id=thread_id)
+            if handoff:
+                target, reason = handoff
+                # 清理响应中的 handoff 标记
+                cleaned_response = self.HANDOFF_PATTERN.sub("", full_response).strip()
+
+                # 存储清理后的响应
+                await thread_manager.add_message(
+                    thread_id=thread_id,
+                    sender_id=agent_id,
+                    content=cleaned_response,
+                )
+
+                # 广播清理后的响应
+                await sse_manager.broadcast("message", {
+                    "id": message_id,
+                    "thread_id": thread_id,
+                    "sender": agent_id,
+                    "sender_name": agent_name,
+                    "content": cleaned_response,
+                    "timestamp": datetime.now(tz=timezone.utc).isoformat(),
+                    "type": "agent",
+                }, thread_id=thread_id)
+
+                # 异步执行 handoff
+                asyncio.create_task(self.execute_handoff(
+                    from_agent=agent_id,
+                    to_agent=target,
+                    thread_id=thread_id,
+                    reason=reason,
+                ))
+            else:
+                # 存储 agent 响应到线程
+                await thread_manager.add_message(
+                    thread_id=thread_id,
+                    sender_id=agent_id,
+                    content=full_response,
+                )
+
+                # 广播完整消息事件
+                await sse_manager.broadcast("message", {
+                    "id": message_id,
+                    "thread_id": thread_id,
+                    "sender": agent_id,
+                    "sender_name": agent_name,
+                    "content": full_response,
+                    "timestamp": datetime.now(tz=timezone.utc).isoformat(),
+                    "type": "agent",
+                }, thread_id=thread_id)
 
         except Exception as e:
             logger.error(f"Agent {agent_id} LLM call failed: {e}", exc_info=True)

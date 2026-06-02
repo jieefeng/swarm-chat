@@ -45,3 +45,40 @@ def test_parse_mentions_email_not_matched(router):
     cleaned, mentions = router.parse_mentions(content)
     assert mentions == ["architect"]
     assert "user@example.com" in cleaned
+
+
+# --- Handoff 检测测试 ---
+
+def test_detect_handoff_simple(router):
+    """测试简单的 handoff 检测"""
+    content = "方案已完成 [HANDOFF:developer]"
+    result = router.detect_handoff(content)
+    assert result == ("developer", None)
+
+
+def test_detect_handoff_with_reason(router):
+    """测试带原因的 handoff 检测"""
+    content = "方案已完成 [HANDOFF:qa:请审查代码]"
+    result = router.detect_handoff(content)
+    assert result == ("qa", "请审查代码")
+
+
+def test_detect_no_handoff(router):
+    """测试无 handoff 标记"""
+    content = "方案已完成"
+    result = router.detect_handoff(content)
+    assert result is None
+
+
+def test_detect_invalid_agent(router):
+    """测试无效的 agent ID"""
+    content = "[HANDOFF:unknown_agent]"
+    result = router.detect_handoff(content)
+    assert result is None
+
+
+def test_detect_handoff_in_middle(router):
+    """测试 handoff 标记在中间位置"""
+    content = "这是方案 [HANDOFF:developer] 请实现"
+    result = router.detect_handoff(content)
+    assert result == ("developer", None)
