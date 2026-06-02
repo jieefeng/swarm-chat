@@ -86,18 +86,21 @@ class A2ARouter:
             thread_id: 线程 ID
             reason: handoff 原因（可选）
         """
-        from_name = AGENT_CONFIGS.get(from_agent, {}).get("name", from_agent)
-        reason_text = f": {reason}" if reason else ""
-        handoff_message = f"[来自 {from_name} 的 handoff{reason_text}]"
+        try:
+            from_name = AGENT_CONFIGS.get(from_agent, {}).get("name", from_agent)
+            reason_text = f": {reason}" if reason else ""
+            handoff_message = f"[来自 {from_name} 的 handoff{reason_text}]"
 
-        logger.info(f"Handoff: {from_agent} → {to_agent} (thread={thread_id})")
+            logger.info(f"Handoff: {from_agent} → {to_agent} (thread={thread_id})")
 
-        await self.deliver_to_agent(
-            agent_id=to_agent,
-            thread_id=thread_id,
-            message=handoff_message,
-            from_agent=from_agent,
-        )
+            await self.deliver_to_agent(
+                agent_id=to_agent,
+                thread_id=thread_id,
+                message=handoff_message,
+                from_agent=from_agent,
+            )
+        except Exception as e:
+            logger.error(f"Handoff execution failed: {from_agent} → {to_agent}: {e}", exc_info=True)
 
     async def route_message(self, thread_id: str, content: str,
                             agent_id: Optional[str] = None) -> list[str]:
@@ -191,57 +194,38 @@ class A2ARouter:
                 await sse_manager.broadcast_stream_chunk(message_id, item, seq)
                 seq += 1
 
-            # 检测 handoff
+            # 检测 handoff 并清理标记
             handoff = self.detect_handoff(full_response)
+            target, reason = (handoff if handoff else (None, None))
+            final_content = self.HANDOFF_PATTERN.sub("", full_response).strip() if handoff else full_response
 
+            # 存储 + 广播
+            await thread_manager.add_message(
+                thread_id=thread_id,
+                sender_id=agent_id,
+                content=final_content,
+            )
+            await sse_manager.broadcast("message", {
+                "id": message_id,
+                "thread_id": thread_id,
+                "sender": agent_id,
+                "sender_name": agent_name,
+                "content": final_content,
+                "timestamp": datetime.now(tz=timezone.utc).isoformat(),
+                "type": "agent",
+            }, thread_id=thread_id)
+
+            # 异步执行 handoff（带错误回调）
             if handoff:
-                target, reason = handoff
-                # 清理响应中的 handoff 标记
-                cleaned_response = self.HANDOFF_PATTERN.sub("", full_response).strip()
-
-                # 存储清理后的响应
-                await thread_manager.add_message(
-                    thread_id=thread_id,
-                    sender_id=agent_id,
-                    content=cleaned_response,
-                )
-
-                # 广播清理后的响应
-                await sse_manager.broadcast("message", {
-                    "id": message_id,
-                    "thread_id": thread_id,
-                    "sender": agent_id,
-                    "sender_name": agent_name,
-                    "content": cleaned_response,
-                    "timestamp": datetime.now(tz=timezone.utc).isoformat(),
-                    "type": "agent",
-                }, thread_id=thread_id)
-
-                # 异步执行 handoff
-                asyncio.create_task(self.execute_handoff(
+                task = asyncio.create_task(self.execute_handoff(
                     from_agent=agent_id,
                     to_agent=target,
                     thread_id=thread_id,
                     reason=reason,
                 ))
-            else:
-                # 存储 agent 响应到线程
-                await thread_manager.add_message(
-                    thread_id=thread_id,
-                    sender_id=agent_id,
-                    content=full_response,
-                )
-
-                # 广播完整消息事件
-                await sse_manager.broadcast("message", {
-                    "id": message_id,
-                    "thread_id": thread_id,
-                    "sender": agent_id,
-                    "sender_name": agent_name,
-                    "content": full_response,
-                    "timestamp": datetime.now(tz=timezone.utc).isoformat(),
-                    "type": "agent",
-                }, thread_id=thread_id)
+                task.add_done_callback(lambda t: t.exception() and logger.error(
+                    f"Handoff failed: {t.exception()}", exc_info=t.exception()
+                ))
 
         except Exception as e:
             logger.error(f"Agent {agent_id} LLM call failed: {e}", exc_info=True)
