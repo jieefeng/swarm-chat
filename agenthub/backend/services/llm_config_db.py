@@ -22,6 +22,12 @@ class LLMConfigDB:
                 )
             """)
 
+            # 迁移：添加 model 列（如果不存在）
+            cursor = conn.execute("PRAGMA table_info(agent_llm_config)")
+            columns = [row[1] for row in cursor.fetchall()]
+            if "model" not in columns:
+                conn.execute("ALTER TABLE agent_llm_config ADD COLUMN model TEXT")
+
             # 表为空时填入默认配置
             cursor = conn.execute("SELECT COUNT(*) FROM agent_llm_config")
             if cursor.fetchone()[0] == 0:
@@ -50,14 +56,40 @@ class LLMConfigDB:
         finally:
             conn.close()
 
+    def get_model(self, agent_id: str) -> Optional[str]:
+        """获取指定 Agent 的模型配置"""
+        conn = sqlite3.connect(self.db_path)
+        try:
+            cursor = conn.execute(
+                "SELECT model FROM agent_llm_config WHERE agent_id = ?",
+                (agent_id,)
+            )
+            row = cursor.fetchone()
+            return row[0] if row else None
+        finally:
+            conn.close()
+
+    def update_model(self, agent_id: str, model: str) -> bool:
+        """更新指定 Agent 的模型配置"""
+        conn = sqlite3.connect(self.db_path)
+        try:
+            cursor = conn.execute(
+                "UPDATE agent_llm_config SET model = ?, updated_at = CURRENT_TIMESTAMP WHERE agent_id = ?",
+                (model, agent_id)
+            )
+            conn.commit()
+            return cursor.rowcount > 0
+        finally:
+            conn.close()
+
     def get_all_config(self) -> Dict[str, Dict[str, str]]:
         """获取所有 Agent 的 LLM 配置"""
         conn = sqlite3.connect(self.db_path)
         try:
-            cursor = conn.execute("SELECT agent_id, llm_provider FROM agent_llm_config")
+            cursor = conn.execute("SELECT agent_id, llm_provider, model FROM agent_llm_config")
             result = {}
             for row in cursor.fetchall():
-                result[row[0]] = {"llm_provider": row[1]}
+                result[row[0]] = {"llm_provider": row[1], "model": row[2]}
             return result
         finally:
             conn.close()
