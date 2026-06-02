@@ -234,10 +234,14 @@ class SessionManager:
                 accumulated_content = ""
                 tool_calls_map: dict[str, dict] = {}
 
+                # 第一轮使用原始消息，后续轮次使用空消息（因为 messages 列表已包含上下文）
+                current_message = message if round_num == 0 else ""
+                current_system = system_prompt if round_num == 0 else ""
+
                 for chunk in llm.send_message_stream(
                     session_id=session_id,
-                    message="",
-                    system_prompt="",
+                    message=current_message,
+                    system_prompt=current_system,
                     tools=tools,
                     tool_choice="auto" if tools else None,
                 ):
