@@ -13,6 +13,8 @@ import { useMessageStore } from "@/lib/stores/messageStore";
 import { useTaskStore } from "@/lib/stores/taskStore";
 import type { Message } from "@/lib/types";
 
+const EMPTY_TOOL_EXECUTIONS: never[] = [];
+
 interface MessageBubbleProps {
   message: Message;
   isStreaming: boolean;
@@ -25,7 +27,9 @@ export function MessageBubble({
   agentColor,
 }: MessageBubbleProps) {
   const isUser = message.type === "user";
-  const toolExecutions = useMessageStore((s) => s.toolExecutions[message.id] || []);
+  const toolExecutions =
+    useMessageStore((s) => s.toolExecutions[message.id]) ||
+    EMPTY_TOOL_EXECUTIONS;
 
   if (message.messageType === "task_panel") {
     const tasks = useTaskStore.getState().tasks;
