@@ -105,6 +105,15 @@ export interface AgentConfig {
   model: string | null;
 }
 
+// Thread (会话) types
+export interface Thread {
+  id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+  message_count: number;
+}
+
 // Tool execution types
 export interface ToolExecution {
   id: string;

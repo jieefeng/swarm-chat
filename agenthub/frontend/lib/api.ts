@@ -1,4 +1,10 @@
-import type { Agent, AgentConfig, Message, SendMessageResponse } from "./types";
+import type {
+  Agent,
+  AgentConfig,
+  Message,
+  SendMessageResponse,
+  Thread,
+} from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:7005";
 const API_KEY = process.env.NEXT_PUBLIC_API_KEY || "";
@@ -85,6 +91,49 @@ export const api = {
       const errorData = await res.json().catch(() => ({}));
       throw new Error(errorData.detail || `HTTP ${res.status}`);
     }
+    return res.json();
+  },
+
+  async getThreads(limit: number = 50): Promise<{ threads: Thread[] }> {
+    const res = await fetch(`${API_BASE}/api/threads?limit=${limit}`, {
+      headers,
+    });
+    return res.json();
+  },
+
+  async createThread(title?: string): Promise<Thread> {
+    const res = await fetch(`${API_BASE}/api/threads`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ title }),
+    });
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.detail || `HTTP ${res.status}`);
+    }
+    return res.json();
+  },
+
+  async deleteThread(threadId: string): Promise<{ success: boolean }> {
+    const res = await fetch(`${API_BASE}/api/threads/${threadId}`, {
+      method: "DELETE",
+      headers,
+    });
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.detail || `HTTP ${res.status}`);
+    }
+    return res.json();
+  },
+
+  async getThreadMessages(
+    threadId: string,
+    limit: number = 50,
+  ): Promise<{ messages: Message[] }> {
+    const res = await fetch(
+      `${API_BASE}/api/threads/${threadId}/messages?limit=${limit}`,
+      { headers },
+    );
     return res.json();
   },
 };
