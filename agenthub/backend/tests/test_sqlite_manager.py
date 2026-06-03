@@ -8,7 +8,7 @@ from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from agenthub.backend.services.sqlite_manager import SQLiteManager
+from services.sqlite_manager import SQLiteManager
 
 
 @pytest_asyncio.fixture

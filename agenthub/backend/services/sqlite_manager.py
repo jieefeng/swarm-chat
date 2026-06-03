@@ -12,8 +12,15 @@ def _generate_id(prefix: str, length: int = 8) -> str:
 
 
 def _now_ms() -> int:
-    """Current time in milliseconds (Unix timestamp)."""
+    """Current time in milliseconds since Unix epoch."""
     return int(time.time() * 1000)
+
+
+def _require_db(db: Optional[aiosqlite.Connection]) -> aiosqlite.Connection:
+    """Guard against None _db. Raises RuntimeError if not initialized."""
+    if db is None:
+        raise RuntimeError("Database not initialized. Call init_db() first.")
+    return db
 
 
 class SQLiteManager:
@@ -22,6 +29,13 @@ class SQLiteManager:
     def __init__(self, db_path: str):
         self.db_path = db_path
         self._db: Optional[aiosqlite.Connection] = None
+
+    async def __aenter__(self) -> "SQLiteManager":
+        await self.init_db()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+        await self.close()
 
     async def init_db(self) -> None:
         """Initialize database connection and create tables."""
@@ -67,19 +81,21 @@ class SQLiteManager:
 
     async def create_thread(self, title: str, user_id: str) -> str:
         """Create a new thread and return its ID."""
+        db = _require_db(self._db)
         thread_id = _generate_id("thread")
         now = _now_ms()
 
-        await self._db.execute(
+        await db.execute(
             "INSERT INTO threads (id, title, user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
             (thread_id, title, user_id, now, now),
         )
-        await self._db.commit()
+        await db.commit()
         return thread_id
 
     async def get_thread(self, thread_id: str) -> Optional[dict]:
         """Get thread by ID, return None if not found."""
-        cursor = await self._db.execute(
+        db = _require_db(self._db)
+        cursor = await db.execute(
             "SELECT * FROM threads WHERE id = ?", (thread_id,)
         )
         row = await cursor.fetchone()
@@ -89,7 +105,8 @@ class SQLiteManager:
 
     async def get_threads(self, user_id: str, limit: int = 50) -> list[dict]:
         """Get threads for a user, most recently updated first."""
-        cursor = await self._db.execute(
+        db = _require_db(self._db)
+        cursor = await db.execute(
             "SELECT * FROM threads WHERE user_id = ? ORDER BY updated_at DESC, ROWID DESC LIMIT ?",
             (user_id, limit),
         )
@@ -111,14 +128,18 @@ class SQLiteManager:
             return False
 
         now = _now_ms()
+        # Security: keys are filtered through `allowed` allowlist above,
+        # so f-string interpolation here is safe — no user-controlled
+        # column names can bypass the filter.
         set_clause = ", ".join(f"{k} = ?" for k in updates)
         values = list(updates.values()) + [now, thread_id]
 
-        await self._db.execute(
+        db = _require_db(self._db)
+        await db.execute(
             f"UPDATE threads SET {set_clause}, updated_at = ? WHERE id = ?",
             values,
         )
-        await self._db.commit()
+        await db.commit()
         return True
 
     async def delete_thread(self, thread_id: str) -> bool:
@@ -127,8 +148,9 @@ class SQLiteManager:
         if existing is None:
             return False
 
-        await self._db.execute("DELETE FROM threads WHERE id = ?", (thread_id,))
-        await self._db.commit()
+        db = _require_db(self._db)
+        await db.execute("DELETE FROM threads WHERE id = ?", (thread_id,))
+        await db.commit()
         return True
 
     async def add_message(
@@ -140,28 +162,31 @@ class SQLiteManager:
         sender_name: Optional[str] = None,
     ) -> str:
         """Add message to thread and return message ID."""
+        db = _require_db(self._db)
         msg_id = _generate_id("msg")
         now = _now_ms()
 
-        await self._db.execute(
+        await db.execute(
             "INSERT INTO messages (id, thread_id, role, content, agent_id, sender_name, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
             (msg_id, thread_id, role, content, agent_id, sender_name, now),
         )
-        await self._db.commit()
+        await db.commit()
         return msg_id
 
     async def get_messages(self, thread_id: str, limit: int = 100) -> list[dict]:
         """Get messages for a thread in chronological order."""
-        cursor = await self._db.execute(
+        db = _require_db(self._db)
+        cursor = await db.execute(
             "SELECT * FROM messages WHERE thread_id = ? ORDER BY created_at DESC, ROWID DESC LIMIT ?",
             (thread_id, limit),
         )
         rows = await cursor.fetchall()
-        return [dict(row) for row in reversed(rows)]
+        return [dict(row) for row in list(reversed(rows))]
 
     async def get_message_count(self, thread_id: str) -> int:
         """Get count of messages in a thread."""
-        cursor = await self._db.execute(
+        db = _require_db(self._db)
+        cursor = await db.execute(
             "SELECT COUNT(*) FROM messages WHERE thread_id = ?", (thread_id,)
         )
         row = await cursor.fetchone()
