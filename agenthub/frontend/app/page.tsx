@@ -5,10 +5,12 @@ import { AgentList } from "@/components/agents/AgentList";
 import { MessageInput } from "@/components/chat/MessageInput";
 import { MessageList } from "@/components/chat/MessageList";
 import { ModelEditor } from "@/components/chat/ModelEditor";
+import { ThreadList } from "@/components/threads/ThreadList";
 import { api } from "@/lib/api";
 import { useChatStream } from "@/lib/hooks/useChatStream";
 import { useAgentStore } from "@/lib/stores/agentStore";
 import { useMessageStore } from "@/lib/stores/messageStore";
+import { useThreadStore } from "@/lib/stores/threadStore";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:7005";
 
@@ -21,6 +23,19 @@ export default function HomePage() {
     agentId: null,
     baseUrl: API_BASE,
   });
+
+  const handleThreadSelect = async (threadId: string) => {
+    useThreadStore.getState().setCurrentThreadId(threadId);
+    try {
+      const data = await api.getThreadMessages(threadId);
+      useMessageStore.getState().reset();
+      data.messages?.forEach((m) => {
+        useMessageStore.getState().addMessage(m);
+      });
+    } catch (err) {
+      console.error("Failed to load thread messages:", err);
+    }
+  };
 
   const handleSendMessage = (content: string) => {
     const mentionMatch = content.match(/@(\w+)/);
@@ -86,21 +101,27 @@ export default function HomePage() {
 
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
-        <AgentList agents={agents} />
+        {/* 会话列表侧边栏 */}
+        <ThreadList onThreadSelect={handleThreadSelect} />
+
+        {/* 聊天区域 */}
         <div className="flex-1 flex flex-col">
-          <MessageList messages={messages} agentId={null} />
-          <MessageInput
-            onSubmit={handleSendMessage}
-            disabled={connectionState === "connecting"}
-            mentionCandidates={agents.map((a) => ({
-              id: a.id,
-              label: a.nickname || a.name,
-              avatar: a.avatar,
-              beast: a.beast,
-              element: a.element,
-              color: a.color,
-            }))}
-          />
+          <AgentList agents={agents} />
+          <div className="flex-1 flex flex-col">
+            <MessageList messages={messages} agentId={null} />
+            <MessageInput
+              onSubmit={handleSendMessage}
+              disabled={connectionState === "connecting"}
+              mentionCandidates={agents.map((a) => ({
+                id: a.id,
+                label: a.nickname || a.name,
+                avatar: a.avatar,
+                beast: a.beast,
+                element: a.element,
+                color: a.color,
+              }))}
+            />
+          </div>
         </div>
       </div>
 
