@@ -109,8 +109,10 @@ export interface AgentConfig {
 export interface Thread {
   id: string;
   title: string;
-  created_at: string;
-  updated_at: string;
+  created_at: number;
+  updated_at: number;
+  is_pinned: boolean;
+  is_archived: boolean;
   message_count: number;
 }
 
