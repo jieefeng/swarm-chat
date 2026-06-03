@@ -36,9 +36,7 @@ export function ToolExecutionCard({ tool }: ToolExecutionCardProps) {
           <span className="inline-block w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
         )}
         {tool.output && (
-          <span className="text-xs text-gray-400">
-            {expanded ? "▲" : "▼"}
-          </span>
+          <span className="text-xs text-gray-400">{expanded ? "▲" : "▼"}</span>
         )}
       </div>
       {expanded && tool.output && (

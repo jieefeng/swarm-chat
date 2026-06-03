@@ -15,7 +15,11 @@ const PROVIDER_LABELS: Record<string, string> = {
   minimax: "MiniMax",
 };
 
-export function AgentConfigModal({ agent, onClose, onSave }: AgentConfigModalProps) {
+export function AgentConfigModal({
+  agent,
+  onClose,
+  onSave,
+}: AgentConfigModalProps) {
   const [config, setConfig] = useState<AgentConfig | null>(null);
   const [modelInput, setModelInput] = useState("");
   const [loading, setLoading] = useState(true);
@@ -32,18 +36,23 @@ export function AgentConfigModal({ agent, onClose, onSave }: AgentConfigModalPro
 
   useEffect(() => {
     let cancelled = false;
-    api.getAgentConfig(agent.id).then((data) => {
-      if (cancelled) return;
-      setConfig(data);
-      setModelInput(data.model || "");
-      setLoading(false);
-    }).catch((err) => {
-      if (cancelled) return;
-      console.error("Failed to load config:", err);
-      setError("加载配置失败");
-      setLoading(false);
-    });
-    return () => { cancelled = true; };
+    api
+      .getAgentConfig(agent.id)
+      .then((data) => {
+        if (cancelled) return;
+        setConfig(data);
+        setModelInput(data.model || "");
+        setLoading(false);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error("Failed to load config:", err);
+        setError("加载配置失败");
+        setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [agent.id]);
 
   const handleSave = async () => {
@@ -76,8 +85,18 @@ export function AgentConfigModal({ agent, onClose, onSave }: AgentConfigModalPro
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -88,15 +107,20 @@ export function AgentConfigModal({ agent, onClose, onSave }: AgentConfigModalPro
           <>
             {/* 平台显示（只读） */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">平台</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                平台
+              </label>
               <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-600">
-                {PROVIDER_LABELS[config?.llm_provider || "bailian"] || config?.llm_provider}
+                {PROVIDER_LABELS[config?.llm_provider || "bailian"] ||
+                  config?.llm_provider}
               </div>
             </div>
 
             {/* 模型输入框 */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">模型名称</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                模型名称
+              </label>
               <input
                 type="text"
                 value={modelInput}

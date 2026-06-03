@@ -1,14 +1,5 @@
 import { create } from "zustand";
-
-export interface Thread {
-  id: string;
-  title: string;
-  created_at: number;
-  updated_at: number;
-  is_pinned: boolean;
-  is_archived: boolean;
-  message_count: number;
-}
+import type { Thread } from "@/lib/types";
 
 interface ThreadState {
   threads: Thread[];

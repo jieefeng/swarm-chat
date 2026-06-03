@@ -1,6 +1,5 @@
 """会话 (Thread) 路由 - 提供会话管理 API"""
 import os
-import uuid
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
@@ -32,15 +31,6 @@ class UpdateThreadRequest(BaseModel):
     title: Optional[str] = None
     is_pinned: Optional[bool] = None
     is_archived: Optional[bool] = None
-
-
-def _generate_thread_id() -> str:
-    return f"thread_{uuid.uuid4().hex[:8]}"
-
-
-def _now_ms() -> int:
-    import time
-    return int(time.time() * 1000)
 
 
 @router.get("/threads")
@@ -83,7 +73,7 @@ async def update_thread(thread_id: str, req: UpdateThreadRequest):
     # 检查会话是否存在
     existing = await db.get_thread(thread_id)
     if existing is None:
-        raise HTTPException(status_code=405, detail="Thread not found")
+        raise HTTPException(status_code=404, detail="Thread not found")
 
     # 构建更新参数
     update_fields = {}
@@ -111,7 +101,7 @@ async def delete_thread(thread_id: str):
 
     deleted = await db.delete_thread(thread_id)
     if not deleted:
-        raise HTTPException(status_code=405, detail="Thread not found")
+        raise HTTPException(status_code=404, detail="Thread not found")
 
     return {"success": True}
 
@@ -127,7 +117,7 @@ async def get_thread_messages(
     # 检查会话是否存在
     existing = await db.get_thread(thread_id)
     if existing is None:
-        raise HTTPException(status_code=405, detail="Thread not found")
+        raise HTTPException(status_code=404, detail="Thread not found")
 
     messages = await db.get_messages(thread_id=thread_id, limit=limit)
     return {"messages": messages}

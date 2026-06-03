@@ -166,7 +166,7 @@ def create_memory_manager():
             backend = "sqlite"
 
     if backend == "sqlite":
-        from agenthub.backend.services.sqlite_manager import SQLiteManager
+        from .sqlite_manager import SQLiteManager
         db_path = os.getenv("SQLITE_DB_PATH", "agenthub.db")
         manager = SQLiteManager(db_path=db_path)
         logger.info(f"SQLiteManager initialized: {db_path}")

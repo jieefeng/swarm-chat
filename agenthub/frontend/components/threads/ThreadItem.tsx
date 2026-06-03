@@ -1,7 +1,7 @@
 "use client";
 
 import { TrashIcon } from "@heroicons/react/24/outline";
-import type { Thread } from "@/lib/stores/threadStore";
+import type { Thread } from "@/lib/types";
 
 interface ThreadItemProps {
   thread: Thread;
