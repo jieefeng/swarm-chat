@@ -1,4 +1,4 @@
 """路由模块"""
-from . import messages
+from . import messages, threads
 
-__all__ = ["messages"]
+__all__ = ["messages", "threads"]
