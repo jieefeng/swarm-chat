@@ -21,6 +21,7 @@ export function AgentConfigModal({
   onSave,
 }: AgentConfigModalProps) {
   const [config, setConfig] = useState<AgentConfig | null>(null);
+  const [providerInput, setProviderInput] = useState("bailian");
   const [modelInput, setModelInput] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -41,6 +42,7 @@ export function AgentConfigModal({
       .then((data) => {
         if (cancelled) return;
         setConfig(data);
+        setProviderInput(data.llm_provider || "bailian");
         setModelInput(data.model || "");
         setLoading(false);
       })
@@ -59,7 +61,10 @@ export function AgentConfigModal({
     setSaving(true);
     setError(null);
     try {
-      await api.updateAgentConfig(agent.id, { model: modelInput });
+      await api.updateAgentConfig(agent.id, {
+        llm_provider: providerInput,
+        model: modelInput,
+      });
       onSave();
     } catch (err) {
       console.error("Failed to save config:", err);
@@ -108,15 +113,22 @@ export function AgentConfigModal({
           <div className="py-8 text-center text-ink/30 font-body">加载中…</div>
         ) : (
           <>
-            {/* 平台显示（只读） */}
+            {/* 平台选择 */}
             <div className="mb-4">
               <label className="block text-xs font-body font-medium text-ink/50 mb-1.5 tracking-wide">
                 平台
               </label>
-              <div className="px-3 py-2 bg-paper-dark/50 border border-ink/[0.08] rounded-lg text-sm text-ink/60 font-body">
-                {PROVIDER_LABELS[config?.llm_provider || "bailian"] ||
-                  config?.llm_provider}
-              </div>
+              <select
+                value={providerInput}
+                onChange={(e) => setProviderInput(e.target.value)}
+                className="w-full px-3 py-2 bg-white border border-ink/[0.1] rounded-lg text-sm text-ink focus:outline-none focus:border-gold/40 transition-colors font-body"
+              >
+                {Object.entries(PROVIDER_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* 模型输入框 */}

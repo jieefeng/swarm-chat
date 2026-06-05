@@ -3,6 +3,23 @@
 import { useState } from "react";
 import type { Agent } from "@/lib/types";
 
+// 五行神兽 fallback SVG
+const BEAST_SVGS: Record<string, string> = {
+  pm: "龙",
+  architect: "龟",
+  developer: "虎",
+  qa: "雀",
+  orchestrator: "麟",
+};
+
+const ELEMENT_COLORS: Record<string, string> = {
+  木: "#059669",
+  水: "#1E40AF",
+  金: "#F59E0B",
+  火: "#DC2626",
+  土: "#7C3AED",
+};
+
 interface DefaultAgentModalProps {
   agents: Agent[];
   onSelect: (agentId: string) => void;
@@ -57,7 +74,13 @@ export function DefaultAgentModal({
               }`}
             >
               {/* Avatar */}
-              <div className="text-3xl mb-2">{agent.avatar || "🤖"}</div>
+              <div className="w-16 h-16 mb-2 flex items-center justify-center">
+                <AvatarFallback
+                  agentId={agent.id}
+                  element={agent.element}
+                  beast={BEAST_SVGS[agent.id]}
+                />
+              </div>
 
               {/* Name */}
               <div className="font-display text-sm font-medium text-ink">
@@ -105,5 +128,42 @@ export function DefaultAgentModal({
         </div>
       </div>
     </div>
+  );
+}
+
+// 内联 SVG 头像组件
+function AvatarFallback({
+  agentId,
+  element,
+  beast,
+}: {
+  agentId: string;
+  element?: string;
+  beast?: string;
+}) {
+  const color = element ? ELEMENT_COLORS[element] || "#6B7280" : "#6B7280";
+  const char = beast || agentId[0]?.toUpperCase() || "?";
+
+  return (
+    <svg viewBox="0 0 128 128" className="w-full h-full">
+      <defs>
+        <radialGradient id={`grad-${agentId}`} cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor={color} stopOpacity="0.8" />
+          <stop offset="100%" stopColor={color} />
+        </radialGradient>
+      </defs>
+      <circle cx="64" cy="64" r="60" fill={`url(#grad-${agentId})`} />
+      <text
+        x="64"
+        y="80"
+        textAnchor="middle"
+        fontSize="64"
+        fontFamily="serif"
+        fill="white"
+        fontWeight="bold"
+      >
+        {char}
+      </text>
+    </svg>
   );
 }

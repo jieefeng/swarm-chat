@@ -32,11 +32,19 @@ export function AgentSelector({
         {agents.map((agent) => {
           const isActive = agent.id === activeAgentId;
           return (
-            <button
+            <div
               key={agent.id}
+              role="button"
+              tabIndex={0}
               onClick={() => onAgentSelect(agent.id)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onAgentSelect(agent.id);
+                }
+              }}
               className={`
-                group relative flex items-center gap-2 px-3 py-1.5 rounded-lg
+                group relative flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer
                 transition-all duration-150
                 ${isActive ? "bg-ink/[0.08] shadow-sm" : "hover:bg-ink/[0.04]"}
               `}
@@ -108,7 +116,7 @@ export function AgentSelector({
                   />
                 </svg>
               </button>
-            </button>
+            </div>
           );
         })}
       </div>
