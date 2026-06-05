@@ -72,18 +72,21 @@ export function AgentConfigModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* 遮罩层 */}
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
 
       {/* Modal 内容 */}
-      <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md mx-4 p-6">
+      <div className="relative bg-white border border-ink/[0.1] rounded-xl shadow-2xl shadow-ink/10 w-full max-w-md mx-4 p-6 animate-ink-drop">
         {/* 标题栏 */}
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-800">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="font-display text-lg font-semibold text-ink tracking-wide">
             {agent.nickname || agent.name}（{agent.beast}）配置
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-ink/30 hover:text-ink/60 transition-colors"
           >
             <svg
               className="w-5 h-5"
@@ -102,23 +105,23 @@ export function AgentConfigModal({
         </div>
 
         {loading ? (
-          <div className="py-8 text-center text-gray-500">加载中...</div>
+          <div className="py-8 text-center text-ink/30 font-body">加载中…</div>
         ) : (
           <>
             {/* 平台显示（只读） */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-body font-medium text-ink/50 mb-1.5 tracking-wide">
                 平台
               </label>
-              <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-600">
+              <div className="px-3 py-2 bg-paper-dark/50 border border-ink/[0.08] rounded-lg text-sm text-ink/60 font-body">
                 {PROVIDER_LABELS[config?.llm_provider || "bailian"] ||
                   config?.llm_provider}
               </div>
             </div>
 
             {/* 模型输入框 */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+            <div className="mb-5">
+              <label className="block text-xs font-body font-medium text-ink/50 mb-1.5 tracking-wide">
                 模型名称
               </label>
               <input
@@ -126,16 +129,16 @@ export function AgentConfigModal({
                 value={modelInput}
                 onChange={(e) => setModelInput(e.target.value)}
                 placeholder="留空使用默认模型"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 bg-white border border-ink/[0.1] rounded-lg text-sm text-ink placeholder:text-ink/30 focus:outline-none focus:border-gold/40 transition-colors font-body"
               />
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1.5 text-[11px] text-ink/30 font-body">
                 {config?.model ? `当前模型: ${config.model}` : "使用默认模型"}
               </p>
             </div>
 
             {/* 错误提示 */}
             {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-600">
+              <div className="mb-4 p-3 bg-danger/10 border border-danger/20 rounded-lg text-sm text-danger font-body">
                 {error}
               </div>
             )}
@@ -145,16 +148,16 @@ export function AgentConfigModal({
               <button
                 onClick={onClose}
                 disabled={saving}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
+                className="px-4 py-2 text-sm font-body font-medium text-ink/50 bg-ink/[0.04] border border-ink/[0.08] rounded-lg hover:bg-ink/[0.06] disabled:opacity-40 transition-colors"
               >
                 取消
               </button>
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
+                className="px-4 py-2 text-sm font-body font-medium text-gold bg-gold/15 border border-gold/25 rounded-lg hover:bg-gold/25 disabled:opacity-40 transition-colors"
               >
-                {saving ? "保存中..." : "保存"}
+                {saving ? "保存中…" : "保存"}
               </button>
             </div>
           </>

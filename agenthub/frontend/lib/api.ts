@@ -15,7 +15,10 @@ const headers = {
 };
 
 export const api = {
-  async sendMessage(content: string, agentId?: string): Promise<SendMessageResponse> {
+  async sendMessage(
+    content: string,
+    agentId?: string,
+  ): Promise<SendMessageResponse> {
     const res = await fetch(`${API_BASE}/api/messages`, {
       method: "POST",
       headers,

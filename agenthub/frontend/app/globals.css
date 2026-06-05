@@ -1,13 +1,171 @@
 @import "tailwindcss";
+@import url("https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css");
 
+/* ── 水墨丹青·素宣主题 ── */
 @theme {
-  --color-primary: #3b82f6;
-  --color-secondary: #ec4899;
-  --font-sans: "Inter", system-ui, sans-serif;
+  --color-ink: #2c2c3a;
+  --color-ink-light: #3a3a4d;
+  --color-ink-lighter: #4a4a5e;
+  --color-ink-surface: #f8f6f1;
+  --color-paper: #faf8f3;
+  --color-paper-dark: #f0ece4;
+  --color-gold: #9a7b2e;
+  --color-gold-dim: #7a6220;
+  --color-gold-bright: #b8952e;
 
-  /* 响应式断点 - 必须显式声明，否则 md:, lg: 等类失效 */
+  /* 五行色 */
+  --color-wuxing-wood: #3a7d52;
+  --color-wuxing-water: #3a6a9a;
+  --color-wuxing-metal: #9a7b2e;
+  --color-wuxing-fire: #b03a2e;
+  --color-wuxing-earth: #8a6840;
+
+  /* 语义色 */
+  --color-primary: #9a7b2e;
+  --color-secondary: #3a7d52;
+  --color-danger: #b03a2e;
+  --color-success: #3a7d52;
+  --color-warning: #9a7b2e;
+
+  --font-display:
+    "LXGW WenKai", "Noto Serif SC", "Source Han Serif CN", "SimSun", serif;
+  --font-body:
+    "LXGW WenKai", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", "Consolas", monospace;
+
   --breakpoint-sm: 640px;
   --breakpoint-md: 768px;
   --breakpoint-lg: 1024px;
   --breakpoint-xl: 1280px;
+}
+
+/* ── 全局基础 ── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(154, 123, 46, 0.25) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(154, 123, 46, 0.25);
+  border-radius: 3px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(154, 123, 46, 0.4);
+}
+
+::selection {
+  background: rgba(154, 123, 46, 0.2);
+  color: #2c2c3a;
+}
+
+/* ── 纸纹肌理（全局背景） ── */
+body {
+  background-color: #f5f2eb;
+  background-image:
+    radial-gradient(
+      ellipse at 20% 50%,
+      rgba(154, 123, 46, 0.04) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse at 80% 20%,
+      rgba(58, 106, 154, 0.03) 0%,
+      transparent 50%
+    ),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+}
+
+/* ── Prose 样式（Markdown 渲染） ── */
+.prose {
+  --tw-prose-body: #3a3a4d;
+  --tw-prose-headings: #2c2c3a;
+  --tw-prose-lead: #5a5a6d;
+  --tw-prose-links: #9a7b2e;
+  --tw-prose-bold: #2c2c3a;
+  --tw-prose-counters: #8a8a9d;
+  --tw-prose-bullets: #9a7b2e;
+  --tw-prose-hr: rgba(154, 123, 46, 0.2);
+  --tw-prose-quotes: #7a6220;
+  --tw-prose-quote-borders: rgba(154, 123, 46, 0.3);
+  --tw-prose-captions: #8a8a9d;
+  --tw-prose-code: #7a6220;
+  --tw-prose-pre-code: #3a3a4d;
+  --tw-prose-pre-bg: #f0ece4;
+  --tw-prose-th-borders: rgba(154, 123, 46, 0.2);
+  --tw-prose-td-borders: rgba(154, 123, 46, 0.1);
+}
+
+.prose pre {
+  border: 1px solid rgba(154, 123, 46, 0.15);
+  border-radius: 6px;
+}
+
+.prose code:not(pre code) {
+  background: rgba(154, 123, 46, 0.08);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+
+.prose a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(154, 123, 46, 0.4);
+  transition: text-decoration-color 0.2s;
+}
+
+.prose a:hover {
+  text-decoration-color: #9a7b2e;
+}
+
+/* ── 动画 ── */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes inkDrop {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.4s ease-out both;
+}
+
+.animate-ink-drop {
+  animation: inkDrop 0.5s ease-out both;
 }

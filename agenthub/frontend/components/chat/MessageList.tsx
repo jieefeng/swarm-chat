@@ -31,10 +31,16 @@ export function MessageList({ messages, scrollRef }: MessageListProps) {
   }
 
   return (
-    <div ref={ref} className="flex-1 overflow-y-auto p-4 bg-gray-50">
+    <div ref={ref} className="flex-1 overflow-y-auto p-5">
       {messages.length === 0 ? (
-        <div className="text-center text-gray-400 mt-20">
-          暂无消息，开始对话吧
+        <div className="flex flex-col items-center justify-center h-full text-center">
+          <div className="text-4xl mb-4 opacity-30">🐉</div>
+          <p className="text-ink/30 font-display text-sm tracking-wider">
+            暂无消息，开始对话吧
+          </p>
+          <p className="text-ink/20 font-body text-xs mt-2">
+            输入消息或 @ 某位神兽
+          </p>
         </div>
       ) : (
         messages.map((msg, index) => (

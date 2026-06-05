@@ -25,7 +25,7 @@ export function DefaultAgentModal({
   const handleSkip = () => {
     // 默认选择第一个 Agent
     if (agents.length > 0) {
-      onSelect(agents[0]!.id);
+      onSelect(agents[0]?.id ?? "");
     }
     onSkip?.();
   };

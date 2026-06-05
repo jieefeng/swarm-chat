@@ -54,35 +54,41 @@ export function AgentList({ agents }: AgentListProps) {
   };
 
   return (
-    <div className="w-56 bg-white border-r border-gray-200 p-4 overflow-y-auto relative">
-      <div className="text-sm font-semibold text-gray-700 pb-3 border-b border-gray-200">
+    <div className="w-56 bg-paper-dark/30 border-r border-ink/[0.06] p-4 overflow-y-auto relative">
+      <div className="font-display text-xs font-semibold text-gold-dim/60 pb-3 border-b border-ink/[0.08] tracking-[0.2em] uppercase">
         🐉 五行神兽
       </div>
       {agents.map((agent) => (
         <div
           key={agent.id}
-          className="py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors rounded-lg px-2 -mx-2"
+          className="py-3 border-b border-ink/[0.04] hover:bg-ink/[0.03] transition-colors rounded-lg px-2 -mx-2"
         >
-          <div className="flex items-center gap-2">
-            <div
-              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
-              style={{ backgroundColor: agent.color?.primary || "#6B7280" }}
-            >
-              {agent.beast?.[0] || agent.name[0]}
+          <div className="flex items-center gap-2.5">
+            <div className="relative shrink-0">
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold font-display"
+                style={{ backgroundColor: agent.color?.primary || "#6B7280" }}
+              >
+                {agent.beast?.[0] || agent.name[0]}
+              </div>
+              <div
+                className="absolute -inset-0.5 rounded-full blur-sm opacity-30 -z-10"
+                style={{ backgroundColor: agent.color?.primary || "#6B7280" }}
+              />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1">
-                <span className="text-sm font-medium text-gray-800 truncate">
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm font-body font-medium text-ink/80 truncate">
                   {agent.nickname || agent.name}
                 </span>
                 {agent.element && (
-                  <span className="text-xs" title={agent.element}>
+                  <span className="text-[10px]" title={agent.element}>
                     {ELEMENT_EMOJI[agent.element] || ""}
                   </span>
                 )}
               </div>
               {agent.beast && (
-                <div className="text-xs text-gray-400 truncate">
+                <div className="text-[11px] text-ink/30 truncate font-body">
                   {agent.beast}
                 </div>
               )}
@@ -92,11 +98,11 @@ export function AgentList({ agents }: AgentListProps) {
                 e.stopPropagation();
                 setConfigModalAgent(agent);
               }}
-              className="ml-auto p-1 text-gray-400 hover:text-gray-600 transition-colors"
+              className="ml-auto p-1 text-ink/25 hover:text-gold/60 transition-colors"
               title="设置"
             >
               <svg
-                className="w-4 h-4"
+                className="w-3.5 h-3.5"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -119,12 +125,12 @@ export function AgentList({ agents }: AgentListProps) {
 
           {/* LLM Provider 选择器 */}
           <div className="mt-2 flex items-center gap-2">
-            <span className="text-xs text-gray-500">LLM:</span>
+            <span className="text-[10px] text-ink/30 font-body">LLM</span>
             <select
               value={llmConfig[agent.id]?.llm_provider || "bailian"}
               onChange={(e) => handleProviderChange(agent.id, e.target.value)}
               disabled={saving === agent.id}
-              className="text-xs border border-gray-200 rounded px-1.5 py-0.5 bg-white disabled:opacity-50"
+              className="text-[11px] border border-ink/[0.1] rounded px-1.5 py-0.5 bg-white text-ink/60 disabled:opacity-40 font-body focus:outline-none focus:border-gold/30"
             >
               <option value="bailian">阿里云百炼</option>
               <option value="minimax">MiniMax</option>
@@ -132,8 +138,8 @@ export function AgentList({ agents }: AgentListProps) {
           </div>
 
           {agent.catchphrase && (
-            <div className="text-xs text-gray-400 mt-1 italic truncate">
-              "{agent.catchphrase}"
+            <div className="text-[11px] text-ink/25 mt-1.5 truncate font-body italic">
+              「{agent.catchphrase}」
             </div>
           )}
         </div>
@@ -154,7 +160,7 @@ export function AgentList({ agents }: AgentListProps) {
 
       {/* Toast 提示 */}
       {toast && (
-        <div className="absolute bottom-4 left-4 right-4 bg-gray-800 text-white text-xs py-2 px-3 rounded shadow-lg">
+        <div className="absolute bottom-4 left-3 right-3 bg-white/95 text-ink/80 text-xs py-2.5 px-3 rounded-lg shadow-lg border border-ink/[0.1] backdrop-blur-sm font-body animate-fade-in-up">
           {toast}
         </div>
       )}

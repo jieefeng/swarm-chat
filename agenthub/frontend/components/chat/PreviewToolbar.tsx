@@ -18,10 +18,10 @@ export function PreviewToolbar({
   onExpand,
 }: PreviewToolbarProps) {
   return (
-    <div className="flex items-center justify-between bg-gray-50 px-3 py-2 border-b border-gray-200">
+    <div className="flex items-center justify-between bg-paper-dark/40 px-3 py-2 border-b border-ink/[0.08]">
       <div className="flex items-center gap-2">
-        <span className="text-gray-400">🖥️</span>
-        <span className="text-sm font-medium text-gray-700 truncate max-w-[200px]">
+        <span className="text-ink/30">🖥️</span>
+        <span className="text-sm font-body font-medium text-ink/60 truncate max-w-[200px]">
           {title}
         </span>
       </div>
@@ -29,7 +29,7 @@ export function PreviewToolbar({
         <button
           onClick={onCollapse}
           aria-label="collapse"
-          className="p-1.5 rounded hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors"
+          className="p-1.5 rounded hover:bg-ink/[0.06] text-ink/30 hover:text-ink/60 transition-colors"
           title={isCollapsed ? "expand" : "collapse"}
         >
           <svg
@@ -49,7 +49,7 @@ export function PreviewToolbar({
         <button
           onClick={onRefresh}
           aria-label="refresh"
-          className="p-1.5 rounded hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors"
+          className="p-1.5 rounded hover:bg-ink/[0.06] text-ink/30 hover:text-ink/60 transition-colors"
           title="Refresh Preview"
         >
           <svg
@@ -69,7 +69,7 @@ export function PreviewToolbar({
         <button
           onClick={onCopy}
           aria-label="copy"
-          className="p-1.5 rounded hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors"
+          className="p-1.5 rounded hover:bg-ink/[0.06] text-ink/30 hover:text-ink/60 transition-colors"
           title="Copy Code"
         >
           <svg
@@ -90,7 +90,7 @@ export function PreviewToolbar({
           <button
             onClick={onExpand}
             aria-label="expand"
-            className="p-1.5 rounded hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors"
+            className="p-1.5 rounded hover:bg-ink/[0.06] text-ink/30 hover:text-ink/60 transition-colors"
             title="Fullscreen Preview"
           >
             <svg

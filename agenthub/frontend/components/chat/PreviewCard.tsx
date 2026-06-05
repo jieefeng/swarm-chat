@@ -44,7 +44,7 @@ export function PreviewCard({
   }, [htmlCode]);
 
   return (
-    <div className="rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+    <div className="rounded-lg border border-ink/[0.1] overflow-hidden">
       <PreviewToolbar
         title={title}
         isCollapsed={isCollapsed}

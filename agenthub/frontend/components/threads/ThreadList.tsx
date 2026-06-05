@@ -11,7 +11,10 @@ interface ThreadListProps {
   onThreadCreate?: () => void;
 }
 
-export function ThreadList({ onThreadSelect, onThreadCreate }: ThreadListProps) {
+export function ThreadList({
+  onThreadSelect,
+  onThreadCreate,
+}: ThreadListProps) {
   const {
     threads,
     currentThreadId,
@@ -22,18 +25,14 @@ export function ThreadList({ onThreadSelect, onThreadCreate }: ThreadListProps) 
     setLoading,
   } = useThreadStore();
 
-  useEffect(() => {
-    loadThreads();
-  }, []);
-
   const loadThreads = async () => {
     setLoading(true);
     try {
       const data = await api.getThreads();
       setThreads(data.threads || []);
       if (!currentThreadId && data.threads && data.threads.length > 0) {
-        setCurrentThreadId(data.threads[0]!.id);
-        onThreadSelect(data.threads[0]!.id);
+        setCurrentThreadId(data.threads[0]?.id ?? "");
+        onThreadSelect(data.threads[0]?.id ?? "");
       }
     } catch (err) {
       console.error("Failed to load threads:", err);
@@ -41,6 +40,10 @@ export function ThreadList({ onThreadSelect, onThreadCreate }: ThreadListProps) 
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadThreads();
+  }, [loadThreads]);
 
   const handleCreateThread = async () => {
     if (onThreadCreate) {

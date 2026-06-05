@@ -9,7 +9,9 @@ function getStorageKey(threadId: string): string {
 }
 
 export function useDefaultAgent(threadId: string | null) {
-  const [defaultAgentId, setDefaultAgentIdState] = useState<string | null>(null);
+  const [defaultAgentId, setDefaultAgentIdState] = useState<string | null>(
+    null,
+  );
 
   // 从 localStorage 读取
   useEffect(() => {
@@ -39,7 +41,7 @@ export function useDefaultAgent(threadId: string | null) {
         console.error("Failed to save default agent to localStorage:", err);
       }
     },
-    [threadId]
+    [threadId],
   );
 
   // 清除默认 Agent

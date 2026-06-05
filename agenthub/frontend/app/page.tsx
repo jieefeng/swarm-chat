@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DefaultAgentModal } from "@/components/agents/DefaultAgentModal";
 import { AgentSelector } from "@/components/agents/AgentSelector";
+import { DefaultAgentModal } from "@/components/agents/DefaultAgentModal";
 import { MessageInput } from "@/components/chat/MessageInput";
 import { MessageList } from "@/components/chat/MessageList";
 import { ModelEditor } from "@/components/chat/ModelEditor";
@@ -26,7 +26,8 @@ export default function HomePage() {
   const messages = useMessageStore((s) => s.messages);
   const currentThreadId = useThreadStore((s) => s.currentThreadId);
 
-  const { defaultAgentId, setDefaultAgentId } = useDefaultAgent(currentThreadId);
+  const { defaultAgentId, setDefaultAgentId } =
+    useDefaultAgent(currentThreadId);
 
   const { sendMessage, connectionState, lastError } = useChatStream({
     agentId: null,
@@ -85,7 +86,8 @@ export default function HomePage() {
       sendMessage(content);
     } else {
       // 使用默认 Agent
-      const agentId = defaultAgentId || (agents.length > 0 ? agents[0]!.id : undefined);
+      const agentId =
+        defaultAgentId || (agents.length > 0 ? agents[0]?.id : undefined);
       sendMessage(content, agentId);
     }
   };
@@ -158,12 +160,13 @@ export default function HomePage() {
                 agentId={
                   activeAgentId && agents.some((a) => a.id === activeAgentId)
                     ? activeAgentId
-                    : agents[0]!.id
+                    : (agents[0]?.id ?? "")
                 }
                 agentName={
-                  (activeAgentId &&
+                  ((activeAgentId &&
                     agents.find((a) => a.id === activeAgentId)?.name) ||
-                  agents[0]!.name
+                    agents[0]?.name) ??
+                  ""
                 }
               />
             </div>

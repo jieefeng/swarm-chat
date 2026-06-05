@@ -78,11 +78,15 @@ export function ModelEditor({ agentId, agentName }: ModelEditorProps) {
           }}
           onKeyDown={handleKeyDown}
           placeholder="输入模型名称"
-          className="px-2 py-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="px-2 py-1 text-sm bg-white border border-ink/[0.1] rounded-lg text-ink focus:outline-none focus:border-gold/40 font-body"
           disabled={isLoading}
         />
-        {isLoading && <span className="text-xs text-gray-500">保存中...</span>}
-        {error && <span className="text-xs text-red-500">{error}</span>}
+        {isLoading && (
+          <span className="text-xs text-ink/30 font-body">保存中…</span>
+        )}
+        {error && (
+          <span className="text-xs text-danger font-body">{error}</span>
+        )}
       </div>
     );
   }
@@ -90,11 +94,11 @@ export function ModelEditor({ agentId, agentName }: ModelEditorProps) {
   return (
     <button
       onClick={() => setIsEditing(true)}
-      className="text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 px-2 py-1 rounded transition-colors"
+      className="text-sm text-ink/40 hover:text-gold/70 hover:bg-ink/[0.04] px-2 py-1 rounded-lg transition-colors font-body"
       title="点击编辑模型"
     >
       {model || "默认模型"}
-      {success && <span className="ml-2 text-green-500">✓</span>}
+      {success && <span className="ml-2 text-wuxing-wood">✓</span>}
     </button>
   );
 }
