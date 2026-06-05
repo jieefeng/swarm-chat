@@ -204,3 +204,72 @@ class TestThreadsAPI:
             headers=HEADERS,
         )
         assert response.status_code == 405
+
+    def test_delete_all_threads_except_keep(self):
+        """DELETE /api/threads?keep=<id> 删除除指定会话外的所有会话"""
+        t1 = self._create_thread("保留")
+        t2 = self._create_thread("待删 1")
+        t3 = self._create_thread("待删 2")
+
+        response = client.delete(
+            f"/api/threads?keep={t1['id']}",
+            headers=HEADERS,
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["success"] is True
+        assert data["deleted_count"] == 2
+
+        # 验证只剩 t1
+        response = client.get("/api/threads", headers=HEADERS)
+        assert response.status_code == 200
+        ids = [t["id"] for t in response.json()["threads"]]
+        assert t1["id"] in ids
+        assert t2["id"] not in ids
+        assert t3["id"] not in ids
+
+    def test_delete_all_threads_keep_missing_returns_404(self):
+        """DELETE /api/threads?keep=<不存在> 返回 404"""
+        response = client.delete(
+            "/api/threads?keep=thread_nonexistent",
+            headers=HEADERS,
+        )
+        assert response.status_code == 404
+
+    def test_delete_all_threads_cascades_messages(self):
+        """DELETE /api/threads 级联删除被删会话的消息"""
+        import asyncio
+        from agenthub.backend.routers.threads import sqlite_manager
+
+        keep_thread = self._create_thread("保留会话")
+        doomed_thread = self._create_thread("待删会话")
+
+        async def _add_test_message():
+            await sqlite_manager.init_db()
+            await sqlite_manager.add_message(
+                thread_id=doomed_thread["id"],
+                role="user",
+                content="待删消息",
+                agent_id="user",
+                sender_name="用户",
+            )
+        asyncio.run(_add_test_message())
+
+        # 确认消息存在
+        async def _verify_message_exists():
+            return await sqlite_manager.get_messages(doomed_thread["id"])
+        msgs_before = asyncio.run(_verify_message_exists())
+        assert len(msgs_before) == 1
+
+        # 调用 bulk delete
+        response = client.delete(
+            f"/api/threads?keep={keep_thread['id']}",
+            headers=HEADERS,
+        )
+        assert response.status_code == 200
+
+        # 验证被删会话的消息已被级联清空
+        async def _verify_message_cascaded():
+            return await sqlite_manager.get_messages(doomed_thread["id"])
+        msgs_after = asyncio.run(_verify_message_cascaded())
+        assert msgs_after == []

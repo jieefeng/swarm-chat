@@ -106,6 +106,20 @@ async def delete_thread(thread_id: str):
     return {"success": True}
 
 
+@router.delete("/threads")
+async def delete_all_threads(keep: str = Query(..., description="要保留的会话 ID")):
+    """清理除指定会话外的所有会话（包括置顶的）"""
+    db = await _get_db()
+
+    # 验证 keep 指向的会话存在
+    existing = await db.get_thread(keep)
+    if existing is None:
+        raise HTTPException(status_code=404, detail="Thread to keep not found")
+
+    deleted_count = await db.delete_all_except(keep)
+    return {"success": True, "deleted_count": deleted_count}
+
+
 @router.get("/threads/{thread_id}/messages")
 async def get_thread_messages(
     thread_id: str,
