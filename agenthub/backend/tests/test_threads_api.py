@@ -207,6 +207,10 @@ class TestThreadsAPI:
 
     def test_delete_all_threads_except_keep(self):
         """DELETE /api/threads?keep=<id> 删除除指定会话外的所有会话"""
+        # 捕获创建前的线程总数（避免依赖其他测试遗留的 DB 状态）
+        pre_response = client.get("/api/threads", headers=HEADERS)
+        pre_count = len(pre_response.json()["threads"])
+
         t1 = self._create_thread("保留")
         t2 = self._create_thread("待删 1")
         t3 = self._create_thread("待删 2")
@@ -218,7 +222,8 @@ class TestThreadsAPI:
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True
-        assert data["deleted_count"] == 2
+        # 删除数量 = 之前的总数 + 3（新创建） - 1（保留 t1）
+        assert data["deleted_count"] == pre_count + 3 - 1
 
         # 验证只剩 t1
         response = client.get("/api/threads", headers=HEADERS)
