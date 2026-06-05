@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
+import { TrashIcon } from "@heroicons/react/24/outline";
+import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { useMessageStore } from "@/lib/stores/messageStore";
 import { useThreadStore } from "@/lib/stores/threadStore";
+import { CleanupConfirmModal } from "./CleanupConfirmModal";
 import { NewThreadButton } from "./NewThreadButton";
 import { ThreadItem } from "./ThreadItem";
 
@@ -25,25 +28,29 @@ export function ThreadList({
     setLoading,
   } = useThreadStore();
 
-  const loadThreads = async () => {
-    setLoading(true);
-    try {
-      const data = await api.getThreads();
-      setThreads(data.threads || []);
-      if (!currentThreadId && data.threads && data.threads.length > 0) {
-        setCurrentThreadId(data.threads[0]?.id ?? "");
-        onThreadSelect(data.threads[0]?.id ?? "");
-      }
-    } catch (err) {
-      console.error("Failed to load threads:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [showCleanupModal, setShowCleanupModal] = useState(false);
+  const [cleanupError, setCleanupError] = useState<string | null>(null);
+  const [isCleanupLoading, setIsCleanupLoading] = useState(false);
 
   useEffect(() => {
+    const loadThreads = async () => {
+      setLoading(true);
+      try {
+        const data = await api.getThreads();
+        setThreads(data.threads || []);
+        if (!currentThreadId && data.threads && data.threads.length > 0) {
+          setCurrentThreadId(data.threads[0]?.id ?? "");
+          onThreadSelect(data.threads[0]?.id ?? "");
+        }
+      } catch (err) {
+        console.error("Failed to load threads:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     loadThreads();
-  }, [loadThreads]);
+  }, []); // 只在挂载时执行一次
 
   const handleCreateThread = async () => {
     if (onThreadCreate) {
@@ -83,6 +90,28 @@ export function ThreadList({
     onThreadSelect(threadId);
   };
 
+  const handleCleanupAll = async () => {
+    if (!currentThreadId) return;
+    setCleanupError(null);
+    setIsCleanupLoading(true);
+    try {
+      await api.deleteAllThreads(currentThreadId);
+      const keepThread = threads.find((t) => t.id === currentThreadId);
+      setThreads(keepThread ? [keepThread] : []);
+      useMessageStore.getState().reset();
+      setShowCleanupModal(false);
+    } catch (err) {
+      console.error("Failed to cleanup threads:", err);
+      setCleanupError(err instanceof Error ? err.message : "清理失败，请重试");
+    } finally {
+      setIsCleanupLoading(false);
+    }
+  };
+
+  const keepThreadTitle =
+    threads.find((t) => t.id === currentThreadId)?.title ?? "当前会话";
+  const deletableCount = Math.max(0, threads.length - 1);
+
   return (
     <div className="w-64 flex flex-col border-r border-ink/[0.08] bg-paper-dark/50">
       {/* Header */}
@@ -90,7 +119,25 @@ export function ThreadList({
         <h2 className="font-display text-sm font-semibold text-ink/80 mb-3 tracking-wide">
           会话列表
         </h2>
-        <NewThreadButton onClick={handleCreateThread} disabled={isLoading} />
+        <div className="flex items-center gap-2">
+          {threads.length > 1 && currentThreadId && (
+            <button
+              onClick={() => setShowCleanupModal(true)}
+              disabled={isLoading}
+              title="清理其他会话"
+              aria-label="清理其他会话"
+              className="flex-shrink-0 p-2 text-ink/30 hover:text-danger border border-ink/[0.08] hover:border-danger/30 rounded-lg transition-colors disabled:opacity-40"
+            >
+              <TrashIcon className="w-4 h-4" />
+            </button>
+          )}
+          <div className="flex-1">
+            <NewThreadButton
+              onClick={handleCreateThread}
+              disabled={isLoading}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Thread List */}
@@ -115,6 +162,19 @@ export function ThreadList({
           ))
         )}
       </div>
+
+      <CleanupConfirmModal
+        open={showCleanupModal}
+        deletableCount={deletableCount}
+        keepThreadTitle={keepThreadTitle}
+        isLoading={isCleanupLoading}
+        error={cleanupError}
+        onCancel={() => {
+          setShowCleanupModal(false);
+          setCleanupError(null);
+        }}
+        onConfirm={handleCleanupAll}
+      />
     </div>
   );
 }
