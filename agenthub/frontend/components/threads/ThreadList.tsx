@@ -3,7 +3,6 @@
 import { TrashIcon } from "@heroicons/react/24/outline";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import { useMessageStore } from "@/lib/stores/messageStore";
 import { useThreadStore } from "@/lib/stores/threadStore";
 import { CleanupConfirmModal } from "./CleanupConfirmModal";
 import { NewThreadButton } from "./NewThreadButton";
@@ -98,7 +97,6 @@ export function ThreadList({
       await api.deleteAllThreads(currentThreadId);
       const keepThread = threads.find((t) => t.id === currentThreadId);
       setThreads(keepThread ? [keepThread] : []);
-      useMessageStore.getState().reset();
       setShowCleanupModal(false);
     } catch (err) {
       console.error("Failed to cleanup threads:", err);
