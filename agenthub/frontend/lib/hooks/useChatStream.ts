@@ -18,7 +18,7 @@ interface UseChatStreamOptions {
 }
 
 interface UseChatStreamReturn {
-  sendMessage: (content: string) => Promise<void>;
+  sendMessage: (content: string, agentId?: string) => Promise<void>;
   disconnect: () => void;
   connectionState:
     | "idle"
@@ -60,7 +60,7 @@ export function useChatStream(
   }, []);
 
   const sendMessage = useCallback(
-    async (content: string) => {
+    async (content: string, agentId?: string) => {
       console.log("[DEBUG] sendMessage called with:", content.substring(0, 50));
       // 如果没有选中Agent且消息不是@开头，则拒绝
       if (!agentId && !content.startsWith("@")) {
@@ -257,7 +257,7 @@ export function useChatStream(
             content,
           );
         }
-        const result = await api.sendMessage(content);
+        const result = await api.sendMessage(content, agentId);
         console.log("[DEBUG] API sendMessage result:", JSON.stringify(result));
         if (!result.success) {
           throw new Error("发送消息失败");
