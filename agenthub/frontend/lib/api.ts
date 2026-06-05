@@ -130,6 +130,23 @@ export const api = {
     return res.json();
   },
 
+  async deleteAllThreads(
+    keepThreadId: string,
+  ): Promise<{ success: boolean; deleted_count: number }> {
+    const res = await fetch(
+      `${API_BASE}/api/threads?keep=${encodeURIComponent(keepThreadId)}`,
+      {
+        method: "DELETE",
+        headers,
+      },
+    );
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.detail || `HTTP ${res.status}`);
+    }
+    return res.json();
+  },
+
   async getThreadMessages(
     threadId: string,
     limit: number = 50,
