@@ -9,7 +9,10 @@ import { ModelEditor } from "@/components/chat/ModelEditor";
 import { ThreadList } from "@/components/threads/ThreadList";
 import { api } from "@/lib/api";
 import { useChatStream } from "@/lib/hooks/useChatStream";
-import { useDefaultAgent } from "@/lib/hooks/useDefaultAgent";
+import {
+  getStoredDefaultAgentId,
+  useDefaultAgent,
+} from "@/lib/hooks/useDefaultAgent";
 import { useAgentStore } from "@/lib/stores/agentStore";
 import { useMessageStore } from "@/lib/stores/messageStore";
 import { useThreadStore } from "@/lib/stores/threadStore";
@@ -35,7 +38,19 @@ export default function HomePage() {
   });
 
   const handleThreadSelect = async (threadId: string) => {
+    // 同步检查 localStorage 中是否有默认 Agent
+    const storedDefaultAgent = getStoredDefaultAgentId(threadId);
+
+    if (!storedDefaultAgent) {
+      // 无默认 Agent → 弹窗，用户选择后再切换
+      setPendingThreadId(threadId);
+      setShowAgentModal(true);
+      return;
+    }
+
+    // 有默认 Agent → 正常切换
     useThreadStore.getState().setCurrentThreadId(threadId);
+    setActiveAgentId(storedDefaultAgent);
     try {
       const data = await api.getThreadMessages(threadId);
       useMessageStore.getState().reset();
