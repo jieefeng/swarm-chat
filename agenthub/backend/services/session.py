@@ -196,6 +196,7 @@ class SessionManager:
         self,
         agent_id: str,
         message: str,
+        context: str = "",
         message_history: list[dict] | None = None,
         thread_id: str | None = None,
         on_tool_start: Callable | None = None,
@@ -278,11 +279,14 @@ class SessionManager:
                     if not prompt:
                         continue
 
+                    # 拼接上下文到 prompt
+                    full_prompt = f"{context}\n\n{prompt}" if context else prompt
+
                     if on_tool_start:
-                        on_tool_start(agent_id, prompt, thread_id=thread_id)
+                        on_tool_start(agent_id, full_prompt, thread_id=thread_id)
 
                     result = claude_code_service.execute(
-                        prompt,
+                        full_prompt,
                         model=cc_model,
                         on_progress=(lambda output: on_tool_progress(agent_id, output, thread_id=thread_id))
                         if on_tool_progress

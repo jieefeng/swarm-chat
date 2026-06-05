@@ -257,6 +257,15 @@ async def send_message(req: SendMessageRequest):
                 if bond_context:
                     agent_message = f"{agent_message}\n\n{bond_context}"
 
+            # 获取完整聊天历史，传给 Claude Code
+            full_history = await memory.get_messages(user_id=req.user_id, thread_id=req.thread_id)
+            history_parts = []
+            for msg in full_history:
+                role = msg.get('role', 'unknown')
+                content = msg.get('content', '')
+                history_parts.append(f"[{role}]: {content}")
+            history_text = "\n".join(history_parts)
+
             # 流式调用 LLM，使用线程安全的队列桥接同步生成器与异步循环
             queue: asyncio.Queue = asyncio.Queue()
 
@@ -265,6 +274,7 @@ async def send_message(req: SendMessageRequest):
                     for chunk in session_manager.send_to_agent_stream(
                         agent_id,
                         agent_message,
+                        context=history_text,
                         thread_id=req.thread_id,
                         on_tool_start=lambda aid, cmd, thread_id=None: queue.put_nowait(
                             ("_tool_start", aid, cmd, thread_id)
