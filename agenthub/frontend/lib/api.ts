@@ -15,7 +15,7 @@ const headers = {
 };
 
 export const api = {
-  async sendMessage(content: string): Promise<SendMessageResponse> {
+  async sendMessage(content: string, agentId?: string): Promise<SendMessageResponse> {
     const res = await fetch(`${API_BASE}/api/messages`, {
       method: "POST",
       headers,
@@ -23,6 +23,7 @@ export const api = {
         content,
         sender: "user",
         sender_name: "用户",
+        agent_id: agentId || undefined,
       }),
     });
     if (!res.ok) {
