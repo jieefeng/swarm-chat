@@ -1,11 +1,29 @@
 "use client";
 
+/**
+ * Synchronously reads the default agent ID from localStorage for a given thread.
+ * Used by handleThreadSelect for synchronous checks without depending on React state.
+ */
+
 import { useCallback, useEffect, useState } from "react";
 
 const STORAGE_PREFIX = "agenthub_default_agent_";
 
 function getStorageKey(threadId: string): string {
   return `${STORAGE_PREFIX}${threadId}`;
+}
+
+/**
+ * 同步读取 localStorage 中指定线程的默认 Agent ID
+ * 供 handleThreadSelect 同步检查使用，不依赖 React 状态
+ */
+export function getStoredDefaultAgentId(threadId: string): string | null {
+  if (!threadId) return null;
+  try {
+    return localStorage.getItem(getStorageKey(threadId));
+  } catch {
+    return null;
+  }
 }
 
 export function useDefaultAgent(threadId: string | null) {
