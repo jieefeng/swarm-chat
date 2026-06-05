@@ -232,3 +232,48 @@ async def test_thread_not_found(db):
     """get_thread returns None for non-existent ID."""
     result = await db.get_thread("thread_nonexist")
     assert result is None
+
+
+@pytest.mark.asyncio
+async def test_delete_all_except_keeps_specified_thread(db):
+    """delete_all_except 删除除指定会话外的所有会话"""
+    id1 = await db.create_thread(title="Keep", user_id="user1")
+    id2 = await db.create_thread(title="Delete 1", user_id="user1")
+    id3 = await db.create_thread(title="Delete 2", user_id="user1")
+
+    deleted_count = await db.delete_all_except(id1)
+
+    assert deleted_count == 2
+    assert await db.get_thread(id1) is not None
+    assert await db.get_thread(id2) is None
+    assert await db.get_thread(id3) is None
+
+
+@pytest.mark.asyncio
+async def test_delete_all_except_returns_zero_when_only_keep_exists(db):
+    """只有一个会话时 delete_all_except 返回 0"""
+    id1 = await db.create_thread(title="Only", user_id="user1")
+
+    deleted_count = await db.delete_all_except(id1)
+
+    assert deleted_count == 0
+    assert await db.get_thread(id1) is not None
+
+
+@pytest.mark.asyncio
+async def test_delete_all_except_cascades_messages(db):
+    """delete_all_except 级联删除被删会话的消息"""
+    keep_id = await db.create_thread(title="Keep", user_id="user1")
+    del_id = await db.create_thread(title="Delete", user_id="user1")
+    await db.add_message(thread_id=del_id, role="user", content="bye")
+
+    # 确认消息存在
+    msgs_before = await db.get_messages(del_id)
+    assert len(msgs_before) == 1
+
+    await db.delete_all_except(keep_id)
+
+    # 消息应被级联删除
+    msgs_after = await db.get_messages(del_id)
+    assert msgs_after == []
+    assert await db.get_thread(keep_id) is not None

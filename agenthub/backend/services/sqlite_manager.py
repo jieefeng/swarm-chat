@@ -153,6 +153,18 @@ class SQLiteManager:
         await db.commit()
         return True
 
+    async def delete_all_except(self, keep_thread_id: str) -> int:
+        """删除除指定会话外的所有会话（级联删除消息）。
+
+        Returns: 删除的会话数量
+        """
+        db = _require_db(self._db)
+        cursor = await db.execute(
+            "DELETE FROM threads WHERE id != ?", (keep_thread_id,)
+        )
+        await db.commit()
+        return cursor.rowcount
+
     async def add_message(
         self,
         thread_id: str,
