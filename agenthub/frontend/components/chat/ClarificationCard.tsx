@@ -12,18 +12,20 @@ export function ClarificationCard({
   onSelect,
 }: ClarificationCardProps) {
   return (
-    <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 shadow-sm">
+    <div className="rounded-lg border border-gold/20 bg-gold/[0.06] p-4">
       <div className="mb-3 flex items-center gap-2">
-        <span className="text-amber-600">?</span>
-        <h3 className="text-sm font-semibold text-amber-800">需要澄清</h3>
+        <span className="text-gold">?</span>
+        <h3 className="text-sm font-display font-semibold text-gold">
+          需要澄清
+        </h3>
       </div>
-      <p className="mb-3 text-sm text-amber-900">{question}</p>
+      <p className="mb-3 text-sm text-ink/70 font-body">{question}</p>
       <div className="flex flex-wrap gap-2">
         {options.map((option) => (
           <button
             key={option}
             onClick={() => onSelect(option)}
-            className="rounded-md border border-amber-300 bg-white px-3 py-1.5 text-sm text-amber-700 transition-colors hover:bg-amber-100"
+            className="rounded-lg border border-gold/20 bg-gold/[0.08] px-3 py-1.5 text-sm text-gold/80 font-body transition-colors hover:bg-gold/15 hover:border-gold/30"
           >
             {option}
           </button>

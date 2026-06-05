@@ -3,13 +3,19 @@
  */
 export function extractHtmlFromMarkdown(content: string): string | null {
   const htmlMatch = content.match(/```html\n([\s\S]*?)\n```/);
-  if (htmlMatch?.[1]) { return htmlMatch[1].trim(); }
+  if (htmlMatch?.[1]) {
+    return htmlMatch[1].trim();
+  }
 
   const fullHtmlMatch = content.match(/(<!DOCTYPE html>[\s\S]*<\/html>)/i);
-  if (fullHtmlMatch?.[1]) { return fullHtmlMatch[1]; }
+  if (fullHtmlMatch?.[1]) {
+    return fullHtmlMatch[1];
+  }
 
   const basicHtmlMatch = content.match(/(<html[\s\S]*<\/html>)/i);
-  if (basicHtmlMatch?.[1]) { return basicHtmlMatch[1]; }
+  if (basicHtmlMatch?.[1]) {
+    return basicHtmlMatch[1];
+  }
 
   return null;
 }
@@ -35,14 +41,16 @@ export function processHtml(htmlCode: string): string {
   }
 
   if (!html.includes("Content-Security-Policy")) {
-    html = html.replace(/<head>/i,
-      `<head><meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' https:">`
+    html = html.replace(
+      /<head>/i,
+      `<head><meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' https:">`,
     );
   }
 
   if (!html.includes("viewport")) {
-    html = html.replace(/<head>/i,
-      "<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
+    html = html.replace(
+      /<head>/i,
+      '<head><meta name="viewport" content="width=device-width, initial-scale=1.0">',
     );
   }
 
@@ -65,10 +73,14 @@ export function processHtml(htmlCode: string): string {
  */
 export function extractTitle(content: string): string {
   const titleMatch = content.match(/^#\s+(.+)$/m);
-  if (titleMatch?.[1]) { return titleMatch[1]; }
+  if (titleMatch?.[1]) {
+    return titleMatch[1];
+  }
 
   const htmlTitleMatch = content.match(/<title>(.+?)<\/title>/i);
-  if (htmlTitleMatch?.[1]) { return htmlTitleMatch[1]; }
+  if (htmlTitleMatch?.[1]) {
+    return htmlTitleMatch[1];
+  }
 
   return "预览";
 }

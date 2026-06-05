@@ -98,3 +98,47 @@ export interface ArtifactDiffEvent {
   old_content: string;
   new_content: string;
 }
+
+export interface AgentConfig {
+  agent_id: string;
+  llm_provider: string;
+  model: string | null;
+}
+
+// Thread (会话) types
+export interface Thread {
+  id: string;
+  title: string;
+  created_at: number;
+  updated_at: number;
+  is_pinned: boolean;
+  is_archived: boolean;
+  message_count: number;
+}
+
+// Tool execution types
+export interface ToolExecution {
+  id: string;
+  command: string;
+  status: "running" | "success" | "error";
+  output?: string;
+}
+
+export interface ToolStartEvent {
+  agent_id: string;
+  command: string;
+  message_id: string;
+}
+
+export interface ToolProgressEvent {
+  agent_id: string;
+  output: string;
+  message_id: string;
+}
+
+export interface ToolResultEvent {
+  agent_id: string;
+  content: string;
+  success: boolean;
+  message_id: string;
+}

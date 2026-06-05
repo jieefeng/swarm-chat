@@ -10,6 +10,7 @@
     "check": "biome check --write . && tsc --noEmit"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "next": "^15.0.0",
     "react": "^19.0.0",
     "react-diff-viewer-continued": "^4.2.2",

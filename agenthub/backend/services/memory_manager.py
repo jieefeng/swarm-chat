@@ -142,10 +142,11 @@ class RedisMemoryManager:
 
 def create_memory_manager():
     """根据 STORAGE_BACKEND 环境变量创建对应的 memory manager"""
-    backend = os.getenv("STORAGE_BACKEND", "memory")
+    backend = os.getenv("STORAGE_BACKEND", "sqlite")  # 默认改为 sqlite
+    max_messages = int(os.getenv("MAX_MESSAGES", "1000"))
+
     if backend == "redis":
         redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
-        max_messages = int(os.getenv("MAX_MESSAGES", "1000"))
         ttl_days = int(os.getenv("MESSAGE_TTL_DAYS", "30"))
         try:
             # Test connection synchronously (from_url is lazy, won't fail at construction)
@@ -161,9 +162,17 @@ def create_memory_manager():
             logger.info(f"RedisMemoryManager initialized: {redis_url}")
             return manager
         except Exception as e:
-            logger.warning(f"Redis connection failed: {e}, falling back to memory")
-            return MemoryManager(max_messages=max_messages)
-    return MemoryManager(max_messages=int(os.getenv("MAX_MESSAGES", "1000")))
+            logger.warning(f"Redis connection failed: {e}, falling back to sqlite")
+            backend = "sqlite"
+
+    if backend == "sqlite":
+        from .sqlite_manager import SQLiteManager
+        db_path = os.getenv("SQLITE_DB_PATH", "agenthub.db")
+        manager = SQLiteManager(db_path=db_path)
+        logger.info(f"SQLiteManager initialized: {db_path}")
+        return manager
+
+    return MemoryManager(max_messages=max_messages)
 
 
 redis_memory_manager = create_memory_manager()

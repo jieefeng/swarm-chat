@@ -11,9 +11,10 @@ import type { MentionCandidate } from "@/lib/types";
 import { MentionDropdown } from "./MentionDropdown";
 
 interface MessageInputProps {
-  onSubmit: (content: string) => void;
+  onSubmit: (content: string, agentId?: string) => void;
   disabled: boolean;
   mentionCandidates: MentionCandidate[];
+  defaultAgentId?: string | null;
 }
 
 interface MentionState {
@@ -27,6 +28,7 @@ export function MessageInput({
   onSubmit,
   disabled,
   mentionCandidates,
+  defaultAgentId,
 }: MessageInputProps) {
   const [input, setInput] = useState("");
   const [mentionState, setMentionState] = useState<MentionState>({
@@ -111,7 +113,13 @@ export function MessageInput({
   };
 
   const onFormSubmit = (data: SendMessageInput) => {
-    onSubmit(data.content);
+    // 检查是否有@指令
+    const mentionMatch = data.content.match(/@(\w+)/);
+    if (mentionMatch?.[1]) {
+      onSubmit(data.content);
+    } else {
+      onSubmit(data.content, defaultAgentId || undefined);
+    }
     setInput("");
     reset();
   };
@@ -141,7 +149,7 @@ export function MessageInput({
   return (
     <form
       onSubmit={handleSubmit(onFormSubmit)}
-      className="flex p-4 border-t bg-white"
+      className="flex p-4 border-t border-ink/[0.06] bg-paper/60 backdrop-blur-sm"
     >
       <div className="flex-1 relative">
         <input
@@ -150,12 +158,14 @@ export function MessageInput({
           type="text"
           value={input}
           onChange={handleChange}
-          placeholder={disabled ? "等待回复..." : "输入消息，@某人可定向发送"}
+          placeholder={disabled ? "等待回复…" : "输入消息，@某人可定向发送"}
           disabled={disabled}
-          className="w-full px-4 py-3 rounded-full border border-gray-300 focus:outline-none focus:border-blue-500"
+          className="w-full px-5 py-3 bg-white border border-ink/[0.1] rounded-xl text-ink placeholder:text-ink/30 focus:outline-none focus:border-gold/40 focus:bg-white transition-all duration-200 font-body text-sm"
         />
         {errors.content && (
-          <p className="text-red-500 text-sm mt-1">{errors.content.message}</p>
+          <p className="text-danger text-xs mt-1.5 font-body">
+            {errors.content.message}
+          </p>
         )}
         {mentionState.isActive && (
           <div className="mention-dropdown absolute bottom-full mb-2 w-full">
@@ -169,10 +179,10 @@ export function MessageInput({
       <button
         type="submit"
         disabled={disabled || !input.trim()}
-        className={`ml-3 px-6 py-3 rounded-full font-medium ${
+        className={`ml-3 px-6 py-3 rounded-xl font-display font-medium text-sm transition-all duration-200 ${
           input.trim() && !disabled
-            ? "bg-blue-500 text-white hover:bg-blue-600"
-            : "bg-gray-300 text-gray-500 cursor-not-allowed"
+            ? "bg-gold/15 text-gold-dim border border-gold/25 hover:bg-gold/25 hover:shadow-lg hover:shadow-gold/10"
+            : "bg-ink/[0.03] text-ink/25 border border-ink/[0.08] cursor-not-allowed"
         }`}
       >
         发送

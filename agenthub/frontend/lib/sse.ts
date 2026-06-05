@@ -7,6 +7,9 @@ export const SSE_EVENT_TASK_CREATED = "task_created";
 export const SSE_EVENT_TASK_UPDATE = "task_update";
 export const SSE_EVENT_CLARIFICATION_REQUEST = "clarification_request";
 export const SSE_EVENT_ARTIFACT_DIFF = "artifact_diff";
+export const SSE_EVENT_TOOL_START = "tool_start";
+export const SSE_EVENT_TOOL_PROGRESS = "tool_progress";
+export const SSE_EVENT_TOOL_RESULT = "tool_result";
 
 export type SSEEventType =
   | "message"
@@ -16,7 +19,10 @@ export type SSEEventType =
   | typeof SSE_EVENT_TASK_CREATED
   | typeof SSE_EVENT_TASK_UPDATE
   | typeof SSE_EVENT_CLARIFICATION_REQUEST
-  | typeof SSE_EVENT_ARTIFACT_DIFF;
+  | typeof SSE_EVENT_ARTIFACT_DIFF
+  | typeof SSE_EVENT_TOOL_START
+  | typeof SSE_EVENT_TOOL_PROGRESS
+  | typeof SSE_EVENT_TOOL_RESULT;
 
 export interface SSEMessage {
   id?: string;
@@ -43,6 +49,9 @@ export interface SSEConnectionOptions {
     data: import("@/lib/types").ClarificationRequestEvent,
   ) => void;
   onArtifactDiff?: (data: import("@/lib/types").ArtifactDiffEvent) => void;
+  onToolStart?: (data: import("@/lib/types").ToolStartEvent) => void;
+  onToolProgress?: (data: import("@/lib/types").ToolProgressEvent) => void;
+  onToolResult?: (data: import("@/lib/types").ToolResultEvent) => void;
 }
 
 export function createSSEConnection(options: SSEConnectionOptions) {
@@ -79,8 +88,9 @@ export function createSSEConnection(options: SSEConnectionOptions) {
   const connect = async () => {
     if (aborted) return;
     try {
-      console.log("[SSE] Connecting to:", `${options.baseUrl}/api/events`);
-      const response = await fetch(`${options.baseUrl}/api/events`, {
+      const eventsUrl = `${options.baseUrl}/api/events`;
+      console.log("[SSE] Connecting to:", eventsUrl);
+      const response = await fetch(eventsUrl, {
         headers: {
           "Content-Type": "application/json",
           "X-API-Key": API_KEY,
@@ -170,6 +180,21 @@ export function createSSEConnection(options: SSEConnectionOptions) {
                 options.onArtifactDiff
               ) {
                 options.onArtifactDiff(parsed);
+              } else if (
+                eventType === SSE_EVENT_TOOL_START &&
+                options.onToolStart
+              ) {
+                options.onToolStart(parsed);
+              } else if (
+                eventType === SSE_EVENT_TOOL_PROGRESS &&
+                options.onToolProgress
+              ) {
+                options.onToolProgress(parsed);
+              } else if (
+                eventType === SSE_EVENT_TOOL_RESULT &&
+                options.onToolResult
+              ) {
+                options.onToolResult(parsed);
               } else {
                 options.onMessage(parsed);
               }

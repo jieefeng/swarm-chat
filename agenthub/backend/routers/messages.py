@@ -19,6 +19,53 @@ from agenthub.backend.services.sse_manager import sse_manager
 from agenthub.backend.services.router import MessageRouter
 from agenthub.backend.services.orchestrator import OrchestratorAgent
 from agenthub.backend.routers.tasks import task_manager
+from agenthub.backend.services.sqlite_manager import SQLiteManager
+
+# SQLite 持久化实例
+_sqlite_db_path = os.getenv("SQLITE_DB_PATH", "agenthub.db")
+_sqlite_manager = SQLiteManager(db_path=_sqlite_db_path)
+_sqlite_initialized = False
+
+
+async def _get_sqlite() -> SQLiteManager:
+    """确保 SQLite 已初始化"""
+    global _sqlite_initialized
+    if not _sqlite_initialized:
+        await _sqlite_manager.init_db()
+        _sqlite_initialized = True
+    return _sqlite_manager
+
+
+async def _persist_message(
+    role: str,
+    content: str,
+    agent_id: str,
+    sender_name: str,
+    user_id: str,
+    thread_id: str,
+) -> dict:
+    """双写：同时保存到 memory 和 SQLite"""
+    msg = await memory.add_message(
+        role=role,
+        content=content,
+        agent_id=agent_id,
+        sender_name=sender_name,
+        user_id=user_id,
+        thread_id=thread_id,
+    )
+    try:
+        db = await _get_sqlite()
+        await db.add_message(
+            thread_id=thread_id,
+            role=role,
+            content=content,
+            agent_id=agent_id,
+            sender_name=sender_name,
+        )
+    except Exception as e:
+        print(f"[MESSAGES] SQLite persist error: {e}")
+    return msg
+
 
 router = APIRouter(prefix="/api", tags=["messages"])
 
@@ -101,11 +148,10 @@ async def send_message(req: SendMessageRequest):
     4. 并行发送消息给目标Agent
     5. 推送Agent响应到SSE
     """
-    print(f"[MESSAGES] Received message: {req.content[:100]}")
     route_result = message_router.parse(req.content)
 
-    # 添加用户消息到memory
-    user_msg = await memory.add_message(
+    # 添加用户消息到memory + SQLite
+    user_msg = await _persist_message(
         role=req.sender,
         content=req.content,
         agent_id=req.sender,
@@ -113,7 +159,6 @@ async def send_message(req: SendMessageRequest):
         user_id=req.user_id,
         thread_id=req.thread_id,
     )
-    print(f"[MESSAGES] User message added: {user_msg.get('id')}")
 
     # Note: 不广播用户消息，因为前端已通过乐观更新显示
     # 其他客户端可通过 GET /api/messages 获取历史消息
@@ -179,7 +224,7 @@ async def send_message(req: SendMessageRequest):
                 })
         except Exception as e:
             print(f"[MESSAGES] Orchestrator error: {e}")
-            error_msg = await memory.add_message(
+            error_msg = await _persist_message(
                 role="orchestrator",
                 content=f"协调器处理失败: {str(e)}",
                 agent_id="orchestrator",
@@ -213,12 +258,24 @@ async def send_message(req: SendMessageRequest):
                     agent_message = f"{agent_message}\n\n{bond_context}"
 
             # 流式调用 LLM，使用线程安全的队列桥接同步生成器与异步循环
-            print(f"[STREAM] Starting stream for agent={agent_id}, message_id={message_id}")
             queue: asyncio.Queue = asyncio.Queue()
 
             def _produce():
                 try:
-                    for chunk in session_manager.send_to_agent_stream(agent_id, agent_message):
+                    for chunk in session_manager.send_to_agent_stream(
+                        agent_id,
+                        agent_message,
+                        thread_id=req.thread_id,
+                        on_tool_start=lambda aid, cmd, thread_id=None: queue.put_nowait(
+                            ("_tool_start", aid, cmd, thread_id)
+                        ),
+                        on_tool_progress=lambda aid, out, thread_id=None: queue.put_nowait(
+                            ("_tool_progress", aid, out, thread_id)
+                        ),
+                        on_tool_result=lambda aid, content, success, thread_id=None: queue.put_nowait(
+                            ("_tool_result", aid, content, success, thread_id)
+                        ),
+                    ):
                         queue.put_nowait(chunk)
                 except Exception as e:
                     queue.put_nowait(e)
@@ -227,23 +284,31 @@ async def send_message(req: SendMessageRequest):
 
             loop = asyncio.get_event_loop()
             loop.run_in_executor(None, _produce)
-            print(f"[STREAM] Producer started, consuming from queue")
 
             while True:
                 item = await queue.get()
                 if item is None:
-                    print(f"[STREAM] Generator exhausted after {seq} chunks")
                     break
                 if isinstance(item, Exception):
                     raise item
+                if isinstance(item, tuple):
+                    event_type = item[0]
+                    if event_type == "_tool_start":
+                        _, aid, cmd, tid = item
+                        await sse_manager.broadcast_tool_start(aid, cmd, message_id, thread_id=tid)
+                    elif event_type == "_tool_progress":
+                        _, aid, out, tid = item
+                        await sse_manager.broadcast_tool_progress(aid, out, message_id, thread_id=tid)
+                    elif event_type == "_tool_result":
+                        _, aid, content, success, tid = item
+                        await sse_manager.broadcast_tool_result(aid, content, success, message_id, thread_id=tid)
+                    continue
                 full_response += item
-                print(f"[STREAM] Got chunk #{seq}: {repr(item[:50])}")
                 await sse_manager.broadcast_stream_chunk(message_id, item, seq)
                 seq += 1
 
             # 流式完成，存储完整消息并广播
-            print(f"[STREAM] Stream complete. Total chunks: {seq}, response length: {len(full_response)}")
-            agent_msg = await memory.add_message(
+            agent_msg = await _persist_message(
                 role=agent_id,
                 content=full_response,
                 agent_id=agent_id,
@@ -253,12 +318,11 @@ async def send_message(req: SendMessageRequest):
             )
             # 用实际的 message_id 更新
             agent_msg["id"] = message_id
-            print(f"[STREAM] Broadcasting final message event, message_id={message_id}")
             await sse_manager.broadcast("message", agent_msg)
             return agent_msg
 
         except Exception as e:
-            error_msg = await memory.add_message(
+            error_msg = await _persist_message(
                 role=agent_id,
                 content=f"Error: {str(e)}",
                 agent_id=agent_id,

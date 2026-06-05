@@ -21,10 +21,14 @@ node_modules/
 .codegraph/
 .playwright-mcp/
 .superpowers/
+.ruff_cache/
 *.stackdump
 
 # Local env
 .env.local
+
+# Database
+*.db
 
 # OS
 .DS_Store
