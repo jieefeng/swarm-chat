@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { Agent } from "@/lib/types";
 import { AgentSelector } from "../AgentSelector";
@@ -59,5 +59,56 @@ describe("AgentSelector", () => {
     );
     const pmChip = screen.getByText("产品").closest("[role='button']");
     expect(pmChip).not.toHaveTextContent("默认");
+  });
+
+  it("shows 设为默认 button on non-default chips", () => {
+    render(
+      <AgentSelector
+        agents={agents}
+        activeAgentId={null}
+        defaultAgentId="dev"
+        onAgentSelect={vi.fn()}
+        onSetDefault={vi.fn()}
+      />,
+    );
+    const pmChip = screen.getByText("产品").closest("[role='button']");
+    expect(
+      pmChip?.querySelector("button[aria-label='设为默认']"),
+    ).toBeInTheDocument();
+  });
+
+  it("does not show 设为默认 button on the default chip", () => {
+    render(
+      <AgentSelector
+        agents={agents}
+        activeAgentId={null}
+        defaultAgentId="dev"
+        onAgentSelect={vi.fn()}
+        onSetDefault={vi.fn()}
+      />,
+    );
+    const devChip = screen.getByText("开发").closest("[role='button']");
+    expect(
+      devChip?.querySelector("button[aria-label='设为默认']"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("calls onSetDefault with the agent id when 设为默认 clicked", () => {
+    const onSetDefault = vi.fn();
+    render(
+      <AgentSelector
+        agents={agents}
+        activeAgentId={null}
+        defaultAgentId="dev"
+        onAgentSelect={vi.fn()}
+        onSetDefault={onSetDefault}
+      />,
+    );
+    const pmChip = screen.getByText("产品").closest("[role='button']");
+    const btn = pmChip?.querySelector(
+      "button[aria-label='设为默认']",
+    ) as HTMLButtonElement;
+    fireEvent.click(btn);
+    expect(onSetDefault).toHaveBeenCalledWith("pm");
   });
 });
