@@ -1,17 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
   <circle cx="64" cy="64" r="58" stroke="#2c2c3a" stroke-width="2" stroke-opacity="0.15"/>
   <g stroke="#2c2c3a" stroke-linecap="round" stroke-linejoin="round" fill="none">
-    <!-- 龙身 S 形一笔：头朝左上 → 蜿蜒 → 尾朝右下 -->
-    <path d="M 40 50 Q 50 40 60 50 Q 70 60 80 55 Q 90 50 95 65" stroke-width="3"/>
+    <!-- 龙身 S 形一笔：头朝左上 → 蜿蜒向下 → 尾朝右下 -->
+    <path d="M 42 38 Q 52 50 62 48 Q 72 46 78 60 Q 84 78 92 90" stroke-width="3"/>
     <!-- 头 -->
-    <circle cx="40" cy="50" r="5" stroke-width="2"/>
+    <circle cx="42" cy="38" r="5" stroke-width="2"/>
     <!-- 鬃毛三两笔 -->
-    <path d="M 35 45 L 32 38" stroke-width="1.5"/>
-    <path d="M 38 42 L 36 35" stroke-width="1.5"/>
-    <path d="M 41 40 L 41 33" stroke-width="1.5"/>
-    <!-- 鳞片点点 -->
-    <circle cx="60" cy="55" r="1" fill="#2c2c3a"/>
-    <circle cx="68" cy="58" r="1" fill="#2c2c3a"/>
-    <circle cx="76" cy="58" r="1" fill="#2c2c3a"/>
+    <path d="M 37 33 L 34 26" stroke-width="1.5"/>
+    <path d="M 40 30 L 38 23" stroke-width="1.5"/>
+    <path d="M 43 28 L 43 21" stroke-width="1.5"/>
+    <!-- 鳞片点点 (沿 S 身分布) -->
+    <circle cx="62" cy="48" r="1" fill="#2c2c3a"/>
+    <circle cx="72" cy="52" r="1" fill="#2c2c3a"/>
+    <circle cx="80" cy="70" r="1" fill="#2c2c3a"/>
   </g>
 </svg>
