@@ -11,9 +11,9 @@ describe("SetDefaultConfirmToast", () => {
         onCancel={vi.fn()}
       />,
     );
-    expect(
-      screen.getByRole("dialog").textContent,
-    ).toMatch(/将.*开发.*设为默认/);
+    expect(screen.getByRole("dialog").textContent).toMatch(
+      /将.*开发.*设为默认/,
+    );
   });
 
   it("calls onConfirm when 确定 clicked", () => {
