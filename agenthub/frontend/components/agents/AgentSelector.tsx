@@ -7,7 +7,9 @@ import { AgentConfigModal } from "./AgentConfigModal";
 interface AgentSelectorProps {
   agents: Agent[];
   activeAgentId: string | null;
+  defaultAgentId: string | null;
   onAgentSelect: (agentId: string) => void;
+  onSetDefault: (agentId: string) => void;
 }
 
 const ELEMENT_EMOJI: Record<string, string> = {
@@ -21,7 +23,9 @@ const ELEMENT_EMOJI: Record<string, string> = {
 export function AgentSelector({
   agents,
   activeAgentId,
+  defaultAgentId,
   onAgentSelect,
+  onSetDefault,
 }: AgentSelectorProps) {
   const [configModalAgent, setConfigModalAgent] = useState<Agent | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -84,6 +88,16 @@ export function AgentSelector({
               {agent.element && (
                 <span className="text-[10px] opacity-60" title={agent.element}>
                   {ELEMENT_EMOJI[agent.element] || ""}
+                </span>
+              )}
+
+              {/* 默认 Agent 徽章 */}
+              {agent.id === defaultAgentId && (
+                <span
+                  className="text-[9px] px-1.5 py-0.5 rounded-full bg-gold/15 text-gold-dim font-medium"
+                  title="当前默认 Agent"
+                >
+                  默认
                 </span>
               )}
 
