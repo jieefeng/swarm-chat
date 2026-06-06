@@ -52,11 +52,11 @@ export function WuxingFlow() {
               const p2 = nodePosition((i + 1) % flowSteps.length, flowSteps.length)
               const midX = (p1.x + p2.x) / 2
               const midY = (p1.y + p2.y) / 2
-              // 切线偏移让曲线略外凸
+              // 切线偏移让曲线略外凸（垂直于弦方向，指向远离圆心）
               const dx = p2.x - p1.x
               const dy = p2.y - p1.y
-              const nx = -dy * 0.18
-              const ny = dx * 0.18
+              const nx =  dy * 0.18
+              const ny = -dx * 0.18
               return (
                 <path
                   key={`arrow-${step.id}`}
@@ -101,8 +101,13 @@ export function WuxingFlow() {
               return (
                 <g
                   key={step.id}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={step.beast.nickname}
                   onMouseEnter={() => setHovered(step.id)}
                   onMouseLeave={() => setHovered(null)}
+                  onFocus={() => setHovered(step.id)}
+                  onBlur={() => setHovered(null)}
                   style={{ cursor: 'pointer' }}
                 >
                   <circle
