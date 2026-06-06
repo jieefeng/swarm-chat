@@ -121,6 +121,18 @@ export const WUXING_FLOW_ORDER: readonly BeastId[] = [
   "architect", // 玄冥(稳·筑基) → 回到苍龙
 ] as const;
 
+/**
+ * 五行相生流转顺序索引（用于 stagger 入场动画的 delay 序号）
+ * 0..4，值与 WUXING_FLOW_ORDER 的位置严格一致。
+ */
+export const WUXING_FLOW_INDEX: Readonly<Record<BeastId, number>> = {
+  pm: 0,
+  qa: 1,
+  orchestrator: 2,
+  developer: 3,
+  architect: 4,
+};
+
 export function getBeastById(id: BeastId): WuxingBeast | undefined {
   return WUXING_BEASTS.find((b) => b.id === id);
 }
