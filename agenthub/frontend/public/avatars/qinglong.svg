@@ -1,10 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <defs>
-    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#34D399"/>
-      <stop offset="100%" stop-color="#059669"/>
-    </radialGradient>
-  </defs>
-  <circle cx="64" cy="64" r="60" fill="url(#bg)"/>
-  <text x="64" y="80" text-anchor="middle" font-size="64" font-family="serif" fill="white" font-weight="bold">龙</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <circle cx="64" cy="64" r="58" stroke="#2c2c3a" stroke-width="2" stroke-opacity="0.15"/>
+  <g stroke="#2c2c3a" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- 龙身 S 形一笔：头朝左上 → 蜿蜒 → 尾朝右下 -->
+    <path d="M 40 50 Q 50 40 60 50 Q 70 60 80 55 Q 90 50 95 65" stroke-width="3"/>
+    <!-- 头 -->
+    <circle cx="40" cy="50" r="5" stroke-width="2"/>
+    <!-- 鬃毛三两笔 -->
+    <path d="M 35 45 L 32 38" stroke-width="1.5"/>
+    <path d="M 38 42 L 36 35" stroke-width="1.5"/>
+    <path d="M 41 40 L 41 33" stroke-width="1.5"/>
+    <!-- 鳞片点点 -->
+    <circle cx="60" cy="55" r="1" fill="#2c2c3a"/>
+    <circle cx="68" cy="58" r="1" fill="#2c2c3a"/>
+    <circle cx="76" cy="58" r="1" fill="#2c2c3a"/>
+  </g>
 </svg>

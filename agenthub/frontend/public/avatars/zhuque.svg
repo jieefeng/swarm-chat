@@ -1,10 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <defs>
-    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#F87171"/>
-      <stop offset="100%" stop-color="#DC2626"/>
-    </radialGradient>
-  </defs>
-  <circle cx="64" cy="64" r="60" fill="url(#bg)"/>
-  <text x="64" y="80" text-anchor="middle" font-size="64" font-family="serif" fill="white" font-weight="bold">雀</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <circle cx="64" cy="64" r="58" stroke="#2c2c3a" stroke-width="2" stroke-opacity="0.15"/>
+  <g stroke="#2c2c3a" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- 凤冠（三羽从头顶散开） -->
+    <path d="M 50 38 L 56 30 M 60 36 L 64 26 M 70 36 L 72 28" stroke-width="2"/>
+    <!-- 鸟身（圆头 + 鼓胸） -->
+    <path d="M 64 40 Q 80 44 82 60 Q 82 78 64 82 Q 46 78 46 60 Q 48 44 64 40" stroke-width="3"/>
+    <!-- 眼 -->
+    <circle cx="56" cy="56" r="1.5" fill="#2c2c3a"/>
+    <!-- 喙 -->
+    <path d="M 46 58 L 38 62 L 46 66" stroke-width="2"/>
+    <!-- 长尾三羽 -->
+    <path d="M 82 70 Q 96 78 100 90" stroke-width="2.5"/>
+    <path d="M 84 64 Q 102 68 108 78" stroke-width="2"/>
+    <path d="M 80 76 Q 92 86 92 96" stroke-width="1.5"/>
+  </g>
 </svg>

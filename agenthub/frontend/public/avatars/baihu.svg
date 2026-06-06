@@ -1,10 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <defs>
-    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#FCD34D"/>
-      <stop offset="100%" stop-color="#F59E0B"/>
-    </radialGradient>
-  </defs>
-  <circle cx="64" cy="64" r="60" fill="url(#bg)"/>
-  <text x="64" y="80" text-anchor="middle" font-size="64" font-family="serif" fill="white" font-weight="bold">虎</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <circle cx="64" cy="64" r="58" stroke="#2c2c3a" stroke-width="2" stroke-opacity="0.15"/>
+  <g stroke="#2c2c3a" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- 虎头轮廓（两耳 + 圆脸） -->
+    <path d="M 38 50 L 42 38 L 50 46 M 90 50 L 86 38 L 78 46" stroke-width="2.5"/>
+    <path d="M 50 46 Q 64 36 78 46 Q 86 60 84 76 Q 64 90 44 76 Q 42 60 50 46" stroke-width="3"/>
+    <!-- 王字（额头三横一竖） -->
+    <path d="M 56 52 L 72 52" stroke-width="2"/>
+    <path d="M 56 58 L 72 58" stroke-width="2"/>
+    <path d="M 60 64 L 68 64" stroke-width="2"/>
+    <path d="M 64 52 L 64 64" stroke-width="2"/>
+    <!-- 双眼两点 -->
+    <circle cx="52" cy="68" r="1.5" fill="#2c2c3a"/>
+    <circle cx="76" cy="68" r="1.5" fill="#2c2c3a"/>
+    <!-- 鼻嘴 -->
+    <path d="M 64 76 L 64 82 M 58 84 Q 64 88 70 84" stroke-width="1.5"/>
+  </g>
 </svg>

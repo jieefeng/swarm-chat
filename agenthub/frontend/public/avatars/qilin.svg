@@ -1,10 +1,20 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <defs>
-    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#A78BFA"/>
-      <stop offset="100%" stop-color="#7C3AED"/>
-    </radialGradient>
-  </defs>
-  <circle cx="64" cy="64" r="60" fill="url(#bg)"/>
-  <text x="64" y="80" text-anchor="middle" font-size="64" font-family="serif" fill="white" font-weight="bold">麟</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <circle cx="64" cy="64" r="58" stroke="#2c2c3a" stroke-width="2" stroke-opacity="0.15"/>
+  <g stroke="#2c2c3a" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- 鹿角（双叉，从额头斜后） -->
+    <path d="M 50 36 L 42 26 M 42 26 L 36 30 M 42 26 L 44 22" stroke-width="2"/>
+    <path d="M 58 34 L 56 22 M 56 22 L 50 20 M 56 22 L 60 18" stroke-width="2"/>
+    <!-- 狮身（圆头 + 狮鬃） -->
+    <path d="M 40 50 Q 30 60 32 76 Q 38 90 56 88 L 80 86 Q 92 80 88 64 Q 80 50 60 50" stroke-width="3"/>
+    <!-- 鬃毛三笔（颈后） -->
+    <path d="M 32 64 L 26 68 M 30 70 L 24 76 M 32 76 L 26 84" stroke-width="1.5"/>
+    <!-- 眼 -->
+    <circle cx="48" cy="62" r="1.5" fill="#2c2c3a"/>
+    <!-- 鼻嘴 -->
+    <path d="M 38 74 L 34 80 M 40 82 Q 46 86 52 82" stroke-width="1.5"/>
+    <!-- 龙鳞一笔（肩部） -->
+    <path d="M 64 56 Q 68 60 64 64 M 70 58 Q 74 62 70 66 M 76 60 Q 80 64 76 68" stroke-width="1"/>
+    <!-- 腿（暗示） -->
+    <path d="M 56 88 L 56 96 M 72 86 L 72 96" stroke-width="2.5"/>
+  </g>
 </svg>
