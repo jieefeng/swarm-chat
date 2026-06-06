@@ -134,4 +134,18 @@ describe("ConfirmDialog", () => {
     expect(screen.getByRole("button", { name: "确定" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "取消" })).toBeDisabled();
   });
+
+  it("displays error message when error prop is set", () => {
+    render(
+      <ConfirmDialog
+        open
+        title="X"
+        message="Y"
+        error="会话不存在"
+        onCancel={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("会话不存在")).toBeInTheDocument();
+  });
 });

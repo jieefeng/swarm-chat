@@ -23,6 +23,7 @@ export function ConfirmDialog({
   confirmText = "确定",
   cancelText = "取消",
   isLoading = false,
+  error,
   onCancel,
   onConfirm,
 }: ConfirmDialogProps) {
@@ -43,6 +44,16 @@ export function ConfirmDialog({
       <div className="bg-paper p-7 w-[500px] max-w-[90vw]">
         <h2 className="font-display text-lg font-semibold text-ink">{title}</h2>
         <div className="text-sm text-ink/65 font-body leading-relaxed mt-4">{message}</div>
+
+        {error && (
+          <div
+            role="alert"
+            className="mb-4 mt-4 p-3 bg-danger/10 border border-danger/20 rounded-lg text-sm text-danger font-body"
+          >
+            {error}
+          </div>
+        )}
+
         <div className="flex justify-end gap-3 mt-6">
           <button type="button" onClick={onCancel} disabled={isLoading}>
             {cancelText}
