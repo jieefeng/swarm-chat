@@ -85,8 +85,8 @@ agenthub/frontend/
 │   │   ├── BeastRoster.tsx        ← 改:5 卡片 lift-ink focus-ink,内文 prose-ink
 │   │   └── ForumEntry.tsx         ← 改:CTA 按钮 press-ink focus-ink
 │   └── chat/
-│       ├── MessageBubble.tsx      ← 改:Agent 文本内容容器加 prose-ink
 │       └── MessageInput.tsx       ← 改:input 加 focus-ink
+│       (MessageBubble.tsx 不改 — 见 §11 决策,等 markdown 渲染引入后再加 prose-ink)
 ├── lib/
 │   ├── wuxing.ts                  ← 改:导出 WUXING_FLOW_INDEX(id → stagger 序号)helper
 │   └── hooks/
