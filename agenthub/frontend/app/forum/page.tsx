@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { AgentSelector } from "@/components/agents/AgentSelector";
 import { DefaultAgentModal } from "@/components/agents/DefaultAgentModal";
+import { SetDefaultConfirmToast } from "@/components/agents/SetDefaultConfirmToast";
 import { MessageInput } from "@/components/chat/MessageInput";
 import { MessageList } from "@/components/chat/MessageList";
 import { ModelEditor } from "@/components/chat/ModelEditor";
@@ -23,6 +24,9 @@ export default function HomePage() {
   const [activeAgentId, setActiveAgentId] = useState<string | null>(null);
   const [showAgentModal, setShowAgentModal] = useState(false);
   const [pendingThreadId, setPendingThreadId] = useState<string | null>(null);
+  const [pendingDefaultAgentId, setPendingDefaultAgentId] = useState<
+    string | null
+  >(null);
 
   const agents = useAgentStore((s) => s.agents);
   const setAgents = useAgentStore((s) => s.setAgents);
@@ -126,6 +130,11 @@ export default function HomePage() {
     loadData();
   }, [setAgents]);
 
+  // 切换 thread 时清掉"设为默认"待处理状态，避免跨 thread 误操作
+  useEffect(() => {
+    setPendingDefaultAgentId(null);
+  }, [currentThreadId]);
+
   const connectionLabel = {
     connected: {
       dot: "bg-emerald-400",
@@ -218,7 +227,9 @@ export default function HomePage() {
             <AgentSelector
               agents={agents}
               activeAgentId={activeAgentId}
+              defaultAgentId={defaultAgentId}
               onAgentSelect={setActiveAgentId}
+              onSetDefault={setPendingDefaultAgentId}
             />
           </div>
           <div className="relative flex-1 flex flex-col">
@@ -247,6 +258,27 @@ export default function HomePage() {
           onSkip={handleAgentModalSkip}
         />
       )}
+
+      {/* 「设为默认」迷你确认 toast */}
+      {pendingDefaultAgentId &&
+        (() => {
+          const pendingAgent = agents.find(
+            (a) => a.id === pendingDefaultAgentId,
+          );
+          if (!pendingAgent) return null;
+          return (
+            <div className="absolute right-6 top-16 z-40">
+              <SetDefaultConfirmToast
+                agentName={pendingAgent.nickname || pendingAgent.name}
+                onConfirm={() => {
+                  setDefaultAgentId(pendingDefaultAgentId);
+                  setPendingDefaultAgentId(null);
+                }}
+                onCancel={() => setPendingDefaultAgentId(null)}
+              />
+            </div>
+          );
+        })()}
 
       {/* 错误提示 */}
       {lastError && (
