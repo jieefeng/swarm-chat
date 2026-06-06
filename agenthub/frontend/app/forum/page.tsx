@@ -259,7 +259,7 @@ export default function HomePage() {
         />
       )}
 
-      {/* 「设为默认」迷你确认 toast */}
+      {/* 「设为默认」居中确认 modal */}
       {pendingDefaultAgentId &&
         (() => {
           const pendingAgent = agents.find(
@@ -267,16 +267,14 @@ export default function HomePage() {
           );
           if (!pendingAgent) return null;
           return (
-            <div className="absolute right-6 top-16 z-40">
-              <SetDefaultConfirmToast
-                agentName={pendingAgent.nickname || pendingAgent.name}
-                onConfirm={() => {
-                  setDefaultAgentId(pendingDefaultAgentId);
-                  setPendingDefaultAgentId(null);
-                }}
-                onCancel={() => setPendingDefaultAgentId(null)}
-              />
-            </div>
+            <SetDefaultConfirmToast
+              agentName={pendingAgent.nickname || pendingAgent.name}
+              onConfirm={() => {
+                setDefaultAgentId(pendingDefaultAgentId);
+                setPendingDefaultAgentId(null);
+              }}
+              onCancel={() => setPendingDefaultAgentId(null)}
+            />
           );
         })()}
 

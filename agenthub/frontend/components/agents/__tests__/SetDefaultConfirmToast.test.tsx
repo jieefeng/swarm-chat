@@ -12,11 +12,11 @@ describe("SetDefaultConfirmToast", () => {
       />,
     );
     expect(screen.getByRole("dialog").textContent).toMatch(
-      /将.*开发.*设为默认/,
+      /将.*开发.*设为该.*会话的默认对话对象/,
     );
   });
 
-  it("calls onConfirm when 确定 clicked", () => {
+  it("calls onConfirm when 确认 clicked", () => {
     const onConfirm = vi.fn();
     render(
       <SetDefaultConfirmToast
@@ -25,11 +25,11 @@ describe("SetDefaultConfirmToast", () => {
         onCancel={vi.fn()}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "确定" }));
+    fireEvent.click(screen.getByRole("button", { name: "确认" }));
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 
-  it("calls onCancel when 取消 clicked", () => {
+  it("calls onCancel when 拒绝 clicked", () => {
     const onCancel = vi.fn();
     render(
       <SetDefaultConfirmToast
@@ -38,7 +38,7 @@ describe("SetDefaultConfirmToast", () => {
         onCancel={onCancel}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "取消" }));
+    fireEvent.click(screen.getByRole("button", { name: "拒绝" }));
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
 });
