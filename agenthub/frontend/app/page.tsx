@@ -1,4 +1,5 @@
 import { BeastRoster } from "@/components/landing/BeastRoster"
+import { ForumEntry } from "@/components/landing/ForumEntry"
 import { HeroSection } from "@/components/landing/HeroSection"
 
 export default function LandingPage() {
@@ -6,6 +7,7 @@ export default function LandingPage() {
     <main className="min-h-screen bg-paper">
       <HeroSection />
       <BeastRoster />
+      <ForumEntry />
     </main>
   )
 }
