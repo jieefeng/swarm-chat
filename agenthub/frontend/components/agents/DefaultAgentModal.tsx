@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Agent } from "@/lib/types";
+import { WUXING_BEASTS } from "@/lib/wuxing";
 
 // 五行神兽 fallback SVG
 const BEAST_SVGS: Record<string, string> = {
@@ -12,13 +13,11 @@ const BEAST_SVGS: Record<string, string> = {
   orchestrator: "麟",
 };
 
-const ELEMENT_COLORS: Record<string, string> = {
-  木: "#059669",
-  水: "#1E40AF",
-  金: "#F59E0B",
-  火: "#DC2626",
-  土: "#7C3AED",
-};
+// 颜色从 wuxing.ts 取，按 element 索引
+const ELEMENT_COLOR_MAP: Record<string, { primary: string; secondary: string }> =
+  Object.fromEntries(
+    WUXING_BEASTS.map((b) => [b.element, b.color])
+  );
 
 interface DefaultAgentModalProps {
   agents: Agent[];
@@ -141,7 +140,7 @@ function AvatarFallback({
   element?: string;
   beast?: string;
 }) {
-  const color = element ? ELEMENT_COLORS[element] || "#6B7280" : "#6B7280";
+  const color = element ? ELEMENT_COLOR_MAP[element]?.primary || "#6B7280" : "#6B7280";
   const char = beast || agentId[0]?.toUpperCase() || "?";
 
   return (
