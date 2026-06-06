@@ -88,4 +88,50 @@ describe("ConfirmDialog", () => {
     expect(screen.getByRole("button", { name: "删除" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "放弃" })).toBeInTheDocument();
   });
+
+  it("calls onCancel when Escape is pressed", () => {
+    const onCancel = vi.fn();
+    render(
+      <ConfirmDialog
+        open
+        title="X"
+        message="Y"
+        onCancel={onCancel}
+        onConfirm={vi.fn()}
+      />,
+    );
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not call onCancel on Escape when isLoading is true", () => {
+    const onCancel = vi.fn();
+    render(
+      <ConfirmDialog
+        open
+        title="X"
+        message="Y"
+        isLoading
+        onCancel={onCancel}
+        onConfirm={vi.fn()}
+      />,
+    );
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onCancel).not.toHaveBeenCalled();
+  });
+
+  it("disables both buttons when isLoading is true", () => {
+    render(
+      <ConfirmDialog
+        open
+        title="X"
+        message="Y"
+        isLoading
+        onCancel={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "确定" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "取消" })).toBeDisabled();
+  });
 });
