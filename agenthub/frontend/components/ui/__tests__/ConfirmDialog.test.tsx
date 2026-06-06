@@ -131,7 +131,7 @@ describe("ConfirmDialog", () => {
         onConfirm={vi.fn()}
       />,
     );
-    expect(screen.getByRole("button", { name: "确定" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "处理中…" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "取消" })).toBeDisabled();
   });
 
