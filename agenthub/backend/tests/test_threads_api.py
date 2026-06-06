@@ -107,13 +107,13 @@ class TestThreadsAPI:
         assert data["is_pinned"] is True
 
     def test_update_thread_not_found(self):
-        """PATCH /api/threads/{id} 会话不存在返回 405"""
+        """PATCH /api/threads/{id} 会话不存在返回 404"""
         response = client.patch(
             "/api/threads/thread_nonexistent",
             headers=HEADERS,
             json={"title": "不存在"},
         )
-        assert response.status_code == 405
+        assert response.status_code == 404
 
     def test_delete_thread(self):
         """DELETE /api/threads/{id} 删除会话"""
@@ -127,21 +127,21 @@ class TestThreadsAPI:
         data = response.json()
         assert data["success"] is True
 
-        # 删除后再次获取应返回 405
+        # 删除后再次获取应返回 404（资源不存在）
         response = client.patch(
             f"/api/threads/{thread['id']}",
             headers=HEADERS,
             json={"title": "已删除"},
         )
-        assert response.status_code == 405
+        assert response.status_code == 404
 
     def test_delete_thread_not_found(self):
-        """DELETE /api/threads/{id} 会话不存在返回 405"""
+        """DELETE /api/threads/{id} 会话不存在返回 404"""
         response = client.delete(
             "/api/threads/thread_nonexistent",
             headers=HEADERS,
         )
-        assert response.status_code == 405
+        assert response.status_code == 404
 
     def test_get_thread_messages_empty(self):
         """GET /api/threads/{id}/messages 空会话返回空列表"""
@@ -157,12 +157,12 @@ class TestThreadsAPI:
         assert data["messages"] == []
 
     def test_get_thread_messages_not_found(self):
-        """GET /api/threads/{id}/messages 会话不存在返回 405"""
+        """GET /api/threads/{id}/messages 会话不存在返回 404"""
         response = client.get(
             "/api/threads/thread_nonexistent/messages",
             headers=HEADERS,
         )
-        assert response.status_code == 405
+        assert response.status_code == 404
 
     def test_delete_thread_cascades_messages(self):
         """DELETE /api/threads/{id} 级联删除消息"""

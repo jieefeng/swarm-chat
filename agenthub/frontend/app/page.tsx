@@ -1,7 +1,7 @@
-import { BeastRoster } from "@/components/landing/BeastRoster"
-import { ForumEntry } from "@/components/landing/ForumEntry"
-import { HeroSection } from "@/components/landing/HeroSection"
-import { WuxingFlow } from "@/components/landing/WuxingFlow"
+import { BeastRoster } from "@/components/landing/BeastRoster";
+import { ForumEntry } from "@/components/landing/ForumEntry";
+import { HeroSection } from "@/components/landing/HeroSection";
+import { WuxingFlow } from "@/components/landing/WuxingFlow";
 
 export default function LandingPage() {
   return (
@@ -11,5 +11,5 @@ export default function LandingPage() {
       <BeastRoster />
       <ForumEntry />
     </main>
-  )
+  );
 }

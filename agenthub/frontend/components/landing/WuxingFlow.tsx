@@ -1,30 +1,30 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { WUXING_BEASTS, WUXING_FLOW_ORDER, type BeastId } from "@/lib/wuxing"
+import { useState } from "react";
+import { type BeastId, WUXING_BEASTS, WUXING_FLOW_ORDER } from "@/lib/wuxing";
 
-const CENTER_X = 200
-const CENTER_Y = 200
-const RADIUS = 130
-const NODE_R = 38
+const CENTER_X = 200;
+const CENTER_Y = 200;
+const RADIUS = 130;
+const NODE_R = 38;
 
 function nodePosition(index: number, total: number) {
   // 5 个节点从顶部开始顺时针排布
-  const angle = (index * 2 * Math.PI) / total - Math.PI / 2
+  const angle = (index * 2 * Math.PI) / total - Math.PI / 2;
   return {
     x: CENTER_X + RADIUS * Math.cos(angle),
     y: CENTER_Y + RADIUS * Math.sin(angle),
-  }
+  };
 }
 
 export function WuxingFlow() {
-  const [hovered, setHovered] = useState<BeastId | null>(null)
+  const [hovered, setHovered] = useState<BeastId | null>(null);
 
   // 实时示例对话步骤（基于 WUXING_FLOW_ORDER）
   const flowSteps = WUXING_FLOW_ORDER.map((id) => {
-    const b = WUXING_BEASTS.find((beast) => beast.id === id)!
-    return { id, beast: b }
-  })
+    const b = WUXING_BEASTS.find((beast) => beast.id === id)!;
+    return { id, beast: b };
+  });
 
   return (
     <section className="px-6 py-16 md:py-20 max-w-5xl mx-auto">
@@ -47,16 +47,19 @@ export function WuxingFlow() {
           >
             {/* 相生箭头（5 条曲线） */}
             {flowSteps.map((step, i) => {
-              const next = flowSteps[(i + 1) % flowSteps.length]!
-              const p1 = nodePosition(i, flowSteps.length)
-              const p2 = nodePosition((i + 1) % flowSteps.length, flowSteps.length)
-              const midX = (p1.x + p2.x) / 2
-              const midY = (p1.y + p2.y) / 2
+              const next = flowSteps[(i + 1) % flowSteps.length]!;
+              const p1 = nodePosition(i, flowSteps.length);
+              const p2 = nodePosition(
+                (i + 1) % flowSteps.length,
+                flowSteps.length,
+              );
+              const midX = (p1.x + p2.x) / 2;
+              const midY = (p1.y + p2.y) / 2;
               // 切线偏移让曲线略外凸（垂直于弦方向，指向远离圆心）
-              const dx = p2.x - p1.x
-              const dy = p2.y - p1.y
-              const nx =  dy * 0.18
-              const ny = -dx * 0.18
+              const dx = p2.x - p1.x;
+              const dy = p2.y - p1.y;
+              const nx = dy * 0.18;
+              const ny = -dx * 0.18;
               return (
                 <path
                   key={`arrow-${step.id}`}
@@ -67,7 +70,7 @@ export function WuxingFlow() {
                   strokeOpacity={0.4}
                   strokeDasharray="3 4"
                 />
-              )
+              );
             })}
 
             {/* 中心 "议事" 字样 */}
@@ -96,8 +99,8 @@ export function WuxingFlow() {
 
             {/* 5 节点 */}
             {flowSteps.map((step, i) => {
-              const p = nodePosition(i, flowSteps.length)
-              const isHovered = hovered === step.id
+              const p = nodePosition(i, flowSteps.length);
+              const isHovered = hovered === step.id;
               return (
                 <g
                   key={step.id}
@@ -108,7 +111,7 @@ export function WuxingFlow() {
                   onMouseLeave={() => setHovered(null)}
                   onFocus={() => setHovered(step.id)}
                   onBlur={() => setHovered(null)}
-                  style={{ cursor: 'pointer' }}
+                  style={{ cursor: "pointer" }}
                 >
                   <circle
                     cx={p.x}
@@ -117,7 +120,7 @@ export function WuxingFlow() {
                     fill={step.beast.color.secondary}
                     stroke={step.beast.color.primary}
                     strokeWidth={isHovered ? 3 : 2}
-                    style={{ transition: 'all 0.2s ease' }}
+                    style={{ transition: "all 0.2s ease" }}
                   />
                   <text
                     x={p.x}
@@ -141,7 +144,7 @@ export function WuxingFlow() {
                     {step.beast.nickname}
                   </text>
                 </g>
-              )
+              );
             })}
           </svg>
         </div>
@@ -150,7 +153,7 @@ export function WuxingFlow() {
         <div className="space-y-4">
           {hovered ? (
             (() => {
-              const b = WUXING_BEASTS.find((beast) => beast.id === hovered)!
+              const b = WUXING_BEASTS.find((beast) => beast.id === hovered)!;
               return (
                 <div
                   className="rounded-2xl p-6 border-2"
@@ -169,10 +172,10 @@ export function WuxingFlow() {
                     「{b.catchphrase}」
                   </p>
                   <p className="font-body text-xs text-ink/60 leading-relaxed">
-                    擅长：{b.strengths.join('、')}
+                    擅长：{b.strengths.join("、")}
                   </p>
                 </div>
-              )
+              );
             })()
           ) : (
             <div className="rounded-2xl p-6 border border-ink/10 bg-paper">
@@ -180,7 +183,7 @@ export function WuxingFlow() {
                 真实示例
               </div>
               <pre className="font-mono text-xs text-ink/70 whitespace-pre-wrap leading-relaxed">
-{`@瑞麟 加个深色模式
+                {`@瑞麟 加个深色模式
   → 瑞麟拆解任务
   → @苍龙 厘清需求
   → @啸风 实现
@@ -196,5 +199,5 @@ export function WuxingFlow() {
         </div>
       </div>
     </section>
-  )
+  );
 }

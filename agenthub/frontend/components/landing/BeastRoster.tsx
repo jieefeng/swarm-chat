@@ -1,4 +1,4 @@
-import { WUXING_BEASTS } from "@/lib/wuxing"
+import { WUXING_BEASTS } from "@/lib/wuxing";
 
 export function BeastRoster() {
   return (
@@ -8,8 +8,9 @@ export function BeastRoster() {
           五神兽
         </h2>
         <p className="font-body text-sm text-ink/50 mt-2">
-          {WUXING_BEASTS[0]?.direction} · {WUXING_BEASTS[1]?.direction} · {WUXING_BEASTS[2]?.direction} · {WUXING_BEASTS[3]?.direction} · {WUXING_BEASTS[4]?.direction}
-          {" "}— 方位即职责
+          {WUXING_BEASTS[0]?.direction} · {WUXING_BEASTS[1]?.direction} ·{" "}
+          {WUXING_BEASTS[2]?.direction} · {WUXING_BEASTS[3]?.direction} ·{" "}
+          {WUXING_BEASTS[4]?.direction} — 方位即职责
         </p>
       </div>
 
@@ -34,7 +35,8 @@ export function BeastRoster() {
                 {beast.nickname}
               </h3>
               <p className="font-body text-xs text-ink/40 mt-0.5">
-                {beast.beast} · {beast.element} · {beast.direction} · {beast.season}
+                {beast.beast} · {beast.element} · {beast.direction} ·{" "}
+                {beast.season}
               </p>
             </div>
 
@@ -53,11 +55,11 @@ export function BeastRoster() {
 
             {/* 擅长 */}
             <p className="font-body text-[11px] text-ink/40 text-center mt-3 leading-relaxed">
-              擅长：{beast.strengths.slice(0, 2).join('、')}
+              擅长：{beast.strengths.slice(0, 2).join("、")}
             </p>
           </article>
         ))}
       </div>
     </section>
-  )
+  );
 }

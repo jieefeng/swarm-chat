@@ -1,4 +1,4 @@
-import Link from "next/link"
+import Link from "next/link";
 
 export function ForumEntry() {
   return (
@@ -22,15 +22,20 @@ export function ForumEntry() {
           怎么加你自己的神兽
         </h3>
         <p className="font-body text-xs text-ink/50 leading-relaxed">
-          扩 3 个文件即可，5 分钟内完成：<br />
-          <code className="text-ink/70">backend/services/agent_identity.py</code> 的
-          <code className="text-ink/70"> AGENT_IDENTITIES</code> 加一项；<br />
+          扩 3 个文件即可，5 分钟内完成：
+          <br />
+          <code className="text-ink/70">
+            backend/services/agent_identity.py
+          </code>{" "}
+          的<code className="text-ink/70"> AGENT_IDENTITIES</code> 加一项；
+          <br />
           <code className="text-ink/70">backend/services/session.py</code> 的
-          <code className="text-ink/70"> AGENT_CONFIGS</code> 加一项；<br />
+          <code className="text-ink/70"> AGENT_CONFIGS</code> 加一项；
+          <br />
           <code className="text-ink/70">frontend/lib/wuxing.ts</code> 的
           <code className="text-ink/70"> WUXING_BEASTS</code> 加一项。
         </p>
       </div>
     </section>
-  )
+  );
 }

@@ -1,4 +1,4 @@
-import { WUXING_BEASTS } from "@/lib/wuxing"
+import { WUXING_BEASTS } from "@/lib/wuxing";
 
 export function HeroSection() {
   return (
@@ -34,5 +34,5 @@ export function HeroSection() {
         不是 5 个凑数的 agent，是 5 道工序的人格式分身。
       </p>
     </section>
-  )
+  );
 }
