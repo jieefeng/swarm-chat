@@ -2,9 +2,9 @@
 
 import { TrashIcon } from "@heroicons/react/24/outline";
 import { useEffect, useState } from "react";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { api } from "@/lib/api";
 import { useThreadStore } from "@/lib/stores/threadStore";
-import { CleanupConfirmModal } from "./CleanupConfirmModal";
 import { NewThreadButton } from "./NewThreadButton";
 import { ThreadItem } from "./ThreadItem";
 
@@ -30,6 +30,10 @@ export function ThreadList({
   const [showCleanupModal, setShowCleanupModal] = useState(false);
   const [cleanupError, setCleanupError] = useState<string | null>(null);
   const [isCleanupLoading, setIsCleanupLoading] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [deleteTargetTitle, setDeleteTargetTitle] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadThreads = async () => {
@@ -67,20 +71,33 @@ export function ThreadList({
     }
   };
 
-  const handleDeleteThread = async (threadId: string) => {
-    if (!confirm("确定删除这个会话吗？")) return;
+  const handleDeleteThread = async () => {
+    if (!deleteTargetId) return;
+    setIsDeleting(true);
+    setDeleteError(null);
     try {
-      await api.deleteThread(threadId);
-      removeThread(threadId);
-      if (currentThreadId === threadId && threads.length > 1) {
-        const nextThread = threads.find((t) => t.id !== threadId);
+      await api.deleteThread(deleteTargetId);
+
+      // 先获取当前状态，再更新 store
+      const currentThreads = threads;
+      const wasCurrentThread = currentThreadId === deleteTargetId;
+
+      removeThread(deleteTargetId);
+
+      // 如果删除的是当前会话，切换到下一个会话
+      if (wasCurrentThread && currentThreads.length > 1) {
+        const nextThread = currentThreads.find((t) => t.id !== deleteTargetId);
         if (nextThread) {
           setCurrentThreadId(nextThread.id);
           onThreadSelect(nextThread.id);
         }
       }
+      setDeleteTargetId(null);
     } catch (err) {
       console.error("Failed to delete thread:", err);
+      setDeleteError(err instanceof Error ? err.message : "删除失败，请重试");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -155,16 +172,65 @@ export function ThreadList({
               thread={thread}
               isActive={thread.id === currentThreadId}
               onClick={() => handleThreadClick(thread.id)}
-              onDelete={() => handleDeleteThread(thread.id)}
+              onDelete={() => {
+                setDeleteTargetId(thread.id);
+                setDeleteTargetTitle(thread.title);
+              }}
             />
           ))
         )}
       </div>
 
-      <CleanupConfirmModal
+      <ConfirmDialog
+        open={deleteTargetId !== null}
+        title="删除会话？"
+        message={
+          <>
+            会话「
+            <span className="font-semibold text-ink/80">
+              {deleteTargetTitle}
+            </span>
+            」及所有消息将被永久删除。
+            <p className="text-danger/85 font-semibold text-xs mt-2">
+              此操作不可撤销。
+            </p>
+          </>
+        }
+        confirmText="删除"
+        isLoading={isDeleting}
+        error={deleteError}
+        onCancel={() => {
+          setDeleteTargetId(null);
+          setDeleteError(null);
+        }}
+        onConfirm={handleDeleteThread}
+      />
+
+      <ConfirmDialog
         open={showCleanupModal}
-        deletableCount={deletableCount}
-        keepThreadTitle={keepThreadTitle}
+        title="清理其他会话"
+        message={
+          <>
+            <p>
+              将删除{" "}
+              <span className="font-semibold text-danger">
+                {deletableCount}
+              </span>{" "}
+              个会话（包括置顶的）。
+            </p>
+            <p className="mt-1">
+              当前会话「
+              <span className="font-semibold text-ink/80">
+                {keepThreadTitle}
+              </span>
+              」将保留。
+            </p>
+            <p className="text-danger/85 font-semibold text-xs mt-2">
+              此操作不可撤销。
+            </p>
+          </>
+        }
+        confirmText="确定清理"
         isLoading={isCleanupLoading}
         error={cleanupError}
         onCancel={() => {
