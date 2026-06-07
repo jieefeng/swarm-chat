@@ -24,13 +24,13 @@ export function HeroSection() {
       <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-semibold text-ink leading-tight tracking-wide">
         五行神兽，共治一炉代码
       </h1>
-      <p className="font-display text-base md:text-lg text-ink/60 mt-4 tracking-[0.2em]">
+      <p className="font-display text-base md:text-lg text-ink/60 mt-4 tracking-display">
         苍龙定策 · 玄冥筑基 · 啸风锻冶 · 炎翎试火 · 瑞麟调律
       </p>
-      <p className="font-body text-sm md:text-base text-ink/50 mt-8 max-w-2xl mx-auto">
+      <p className="font-body text-sm md:text-base text-ink/50 mt-8 max-w-2xl mx-auto leading-normal">
         你只管 @ 一声，五行自转。
       </p>
-      <p className="font-body text-xs md:text-sm text-ink/40 mt-3 max-w-2xl mx-auto italic">
+      <p className="font-body text-xs md:text-sm text-ink/40 mt-3 max-w-2xl mx-auto italic leading-normal">
         不是 5 个凑数的 agent，是 5 道工序的人格式分身。
       </p>
     </section>
