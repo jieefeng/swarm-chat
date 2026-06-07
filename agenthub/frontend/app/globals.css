@@ -33,13 +33,13 @@
     "LXGW WenKai", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", "Consolas", monospace;
 
-  /* 类型尺度(行高 / 字距) */
-  --type-leading-tight: 1.2;        /* 标题、卡片标题 */
-  --type-leading-normal: 1.6;       /* 正文 */
-  --type-leading-loose: 1.75;       /* 长文(README / 长段气泡) */
-  --type-tracking-display: 0.02em;  /* display 字体微紧 */
-  --type-tracking-body: 0;          /* body 默认 */
-  --type-tracking-mono: -0.01em;    /* code 字符收紧 */
+  /* 类型尺度(行高 / 字距) — 用 Tailwind v4 识别的 --leading-* / --tracking-* 命名空间 */
+  --leading-tight: 1.2;            /* 标题、卡片标题(覆盖默认 1.25) */
+  --leading-normal: 1.6;           /* 正文 */
+  --leading-loose: 1.75;           /* 长文(README / 长段气泡) */
+  --tracking-display: 0.02em;      /* display 字体微紧 */
+  --tracking-body: 0;              /* body 默认 */
+  --tracking-mono: -0.01em;        /* code 字符收紧 */
 
   --breakpoint-sm: 640px;
   --breakpoint-md: 768px;
