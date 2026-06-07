@@ -160,7 +160,7 @@ export function MessageInput({
           onChange={handleChange}
           placeholder={disabled ? "等待回复…" : "输入消息，@某人可定向发送"}
           disabled={disabled}
-          className="w-full px-5 py-3 bg-white border border-ink/[0.1] rounded-xl text-ink placeholder:text-ink/30 focus:outline-none focus:border-gold/40 focus:bg-white transition-all duration-200 font-body text-sm"
+          className="focus-ink w-full px-5 py-3 bg-white border border-ink/[0.1] rounded-xl text-ink placeholder:text-ink/30 focus:border-gold/40 focus:bg-white transition-all duration-200 font-body text-sm"
         />
         {errors.content && (
           <p className="text-danger text-xs mt-1.5 font-body">
@@ -179,7 +179,7 @@ export function MessageInput({
       <button
         type="submit"
         disabled={disabled || !input.trim()}
-        className={`ml-3 px-6 py-3 rounded-xl font-display font-medium text-sm transition-all duration-200 ${
+        className={`focus-ink ml-3 px-6 py-3 rounded-xl font-display font-medium text-sm transition-all duration-200 ${
           input.trim() && !disabled
             ? "bg-gold/15 text-gold-dim border border-gold/25 hover:bg-gold/25 hover:shadow-lg hover:shadow-gold/10"
             : "bg-ink/[0.03] text-ink/25 border border-ink/[0.08] cursor-not-allowed"
