@@ -34,12 +34,12 @@
   --font-mono: "JetBrains Mono", "Fira Code", "Consolas", monospace;
 
   /* 类型尺度(行高 / 字距) — 用 Tailwind v4 识别的 --leading-* / --tracking-* 命名空间 */
-  --leading-tight: 1.2; /* 标题、卡片标题(覆盖默认 1.25) */
-  --leading-normal: 1.6; /* 正文 */
-  --leading-loose: 1.75; /* 长文(README / 长段气泡) */
-  --tracking-display: 0.02em; /* display 字体微紧 */
-  --tracking-body: 0; /* body 默认 */
-  --tracking-mono: -0.01em; /* code 字符收紧 */
+  --leading-tight: 1.2;            /* 标题、卡片标题(覆盖默认 1.25) */
+  --leading-normal: 1.6;           /* 正文 */
+  --leading-loose: 1.75;           /* 长文(README / 长段气泡) */
+  --tracking-display: 0.02em;      /* display 字体微紧 */
+  --tracking-body: 0;              /* body 默认 */
+  --tracking-mono: -0.01em;        /* code 字符收紧 */
 
   --breakpoint-sm: 640px;
   --breakpoint-md: 768px;
@@ -181,44 +181,31 @@ body {
 /* ── 水墨 prose 样式(行内 code / 代码块 / 引用 / 表格) ── */
 @layer components {
   .prose-ink {
-    & p {
-      @apply leading-loose my-3;
-    }
+    & p { @apply leading-loose my-3; }
     & code {
-      @apply font-mono text-[0.9em] px-1.5 py-0.5 bg-ink/[0.06] text-ink/85 rounded tracking-mono;
+      @apply font-mono text-[0.9em] px-1.5 py-0.5
+             bg-ink/[0.06] text-ink/85 rounded
+             tracking-mono;
     }
     & pre {
-      @apply font-mono text-xs leading-relaxed tracking-mono bg-paper-dark/80 text-ink/70 border border-ink/[0.08] rounded-lg p-3 my-3 overflow-x-auto;
+      @apply font-mono text-xs leading-relaxed tracking-mono
+             bg-paper-dark/80 text-ink/70
+             border border-ink/[0.08]
+             rounded-lg p-3 my-3
+             overflow-x-auto;
     }
-    & pre code {
-      @apply bg-transparent p-0 text-inherit;
-    }
+    & pre code { @apply bg-transparent p-0 text-inherit; }
     & blockquote {
-      @apply border-l-2 border-gold/40 pl-4 my-3 italic text-ink/65 leading-normal;
+      @apply border-l-2 border-gold/40 pl-4 my-3
+             italic text-ink/65 leading-normal;
     }
-    & table {
-      @apply w-full text-sm my-3 border-collapse;
-    }
-    & th,
-    & td {
-      @apply border border-ink/[0.08] px-3 py-2 text-left;
-    }
-    & th {
-      @apply bg-paper-dark/50 font-display tracking-display;
-    }
-    & ul,
-    & ol {
-      @apply pl-6 my-3 leading-normal;
-    }
-    & li {
-      @apply my-1;
-    }
-    & ul {
-      list-style: disc;
-    }
-    & ol {
-      list-style: decimal;
-    }
+    & table { @apply w-full text-sm my-3 border-collapse; }
+    & th, & td { @apply border border-ink/[0.08] px-3 py-2 text-left; }
+    & th { @apply bg-paper-dark/50 font-display tracking-display; }
+    & ul, & ol { @apply pl-6 my-3 leading-normal; }
+    & li { @apply my-1; }
+    & ul { list-style: disc; }
+    & ol { list-style: decimal; }
   }
 
   /* 卡片:hover:faint lift + cursor */
