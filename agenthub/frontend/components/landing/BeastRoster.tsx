@@ -1,4 +1,4 @@
-import { WUXING_BEASTS } from "@/lib/wuxing";
+import { WUXING_BEASTS, WUXING_FLOW_INDEX } from "@/lib/wuxing";
 
 export function BeastRoster() {
   return (
@@ -18,8 +18,12 @@ export function BeastRoster() {
         {WUXING_BEASTS.map((beast) => (
           <article
             key={beast.id}
-            className="rounded-2xl border-2 bg-paper p-5 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5"
-            style={{ borderColor: beast.color.secondary }}
+            data-testid="beast-card"
+            className="reveal-beast lift-ink focus-ink rounded-2xl border-2 bg-paper p-5"
+            style={{
+              borderColor: beast.color.secondary,
+              animationDelay: `${WUXING_FLOW_INDEX[beast.id] * 140}ms`,
+            }}
           >
             {/* 头像（暂时用汉字 fallback，Task 9 后换 SVG） */}
             <div
@@ -29,34 +33,36 @@ export function BeastRoster() {
               {beast.beast.charAt(1)}
             </div>
 
-            {/* 名字 + 性格动词 */}
-            <div className="text-center mb-2">
-              <h3 className="font-display text-lg font-semibold text-ink">
-                {beast.nickname}
-              </h3>
-              <p className="font-body text-xs text-ink/40 mt-0.5">
-                {beast.beast} · {beast.element} · {beast.direction} ·{" "}
-                {beast.season}
+            <div className="prose-ink">
+              {/* 名字 + 性格动词 */}
+              <div className="text-center mb-2">
+                <h3 className="font-display text-lg font-semibold text-ink leading-tight tracking-display">
+                  {beast.nickname}
+                </h3>
+                <p className="font-body text-xs text-ink/40 mt-0.5">
+                  {beast.beast} · {beast.element} · {beast.direction} ·{" "}
+                  {beast.season}
+                </p>
+              </div>
+
+              {/* 性格动词大字 */}
+              <div
+                className="text-center text-3xl font-display font-light my-3"
+                style={{ color: beast.color.primary }}
+              >
+                {beast.verb}
+              </div>
+
+              {/* 口头禅 */}
+              <p className="font-body text-xs text-ink/60 text-center italic leading-normal min-h-[2.5rem]">
+                「{beast.catchphrase}」
+              </p>
+
+              {/* 擅长 */}
+              <p className="font-body text-[11px] text-ink/40 text-center mt-3 leading-normal">
+                擅长：{beast.strengths.slice(0, 2).join("、")}
               </p>
             </div>
-
-            {/* 性格动词大字 */}
-            <div
-              className="text-center text-3xl font-display font-light my-3"
-              style={{ color: beast.color.primary }}
-            >
-              {beast.verb}
-            </div>
-
-            {/* 口头禅 */}
-            <p className="font-body text-xs text-ink/60 text-center italic leading-relaxed min-h-[2.5rem]">
-              「{beast.catchphrase}」
-            </p>
-
-            {/* 擅长 */}
-            <p className="font-body text-[11px] text-ink/40 text-center mt-3 leading-relaxed">
-              擅长：{beast.strengths.slice(0, 2).join("、")}
-            </p>
           </article>
         ))}
       </div>
