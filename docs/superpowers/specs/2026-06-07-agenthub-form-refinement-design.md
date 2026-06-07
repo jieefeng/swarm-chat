@@ -60,7 +60,7 @@
 延续阶段 1 路线:
 
 1. **克制 > 堆砌** — 入场动画总时长 < 1.5s,微交互只做"按下/抬起/聚焦"三态
-2. **Token 单一来源** — 排版变量(`--type-*`)与颜色 token 一样,只来自 `globals.css`
+2. **Token 单一来源** — 排版变量(`--leading-*` / `--tracking-*`)与颜色 token 一样,只来自 `globals.css`
 3. **无障碍优先** — `prefers-reduced-motion: reduce` 退化即时显示,不留残影
 4. **零新依赖** — 纯 CSS + 已有 Tailwind v4 体系,不引 Framer Motion / GSAP
 5. **可观察** — 每个目标有可观察的产物(§5 验收)
@@ -72,7 +72,7 @@
 ```
 agenthub/frontend/
 ├── app/
-│   ├── globals.css                ← 改:新增 --type-* 变量、@keyframes inkReveal、
+│   ├── globals.css                ← 改:新增 --leading-* / --tracking-* 变量、@keyframes inkReveal、
 │   │                                       .prose-ink 类、.lift-ink/.focus-ink/.press-ink、
 │   │                                       @media (prefers-reduced-motion: reduce)
 │   ├── page.tsx                   ← 不改(Landing 4 section 拼装,无需变)
@@ -107,13 +107,14 @@ agenthub/frontend/
 @theme {
   /* 已有 --color-* / --font-* 不动 */
 
-  /* 类型尺度 */
-  --type-leading-tight: 1.2;        /* 标题、卡片标题 */
-  --type-leading-normal: 1.6;       /* 正文 */
-  --type-leading-loose: 1.75;       /* 长文(README / 长段气泡) */
-  --type-tracking-display: 0.02em;  /* display 字体微紧 */
-  --type-tracking-body: 0;          /* body 默认 */
-  --type-tracking-mono: -0.01em;    /* code 字符收紧 */
+  /* 类型尺度(行高 / 字距) — 必须用 Tailwind v4 识别的 --leading-* / --tracking-* 命名空间 */
+  /* 才会自动生成对应 utility class(如 leading-tight, tracking-display) */
+  --leading-tight: 1.2;        /* 标题、卡片标题(覆盖默认 1.25) */
+  --leading-normal: 1.6;       /* 正文 */
+  --leading-loose: 1.75;       /* 长文(README / 长段气泡) */
+  --tracking-display: 0.02em;  /* display 字体微紧 */
+  --tracking-body: 0;          /* body 默认 */
+  --tracking-mono: -0.01em;    /* code 字符收紧 */
 }
 ```
 
@@ -130,7 +131,7 @@ agenthub/frontend/
 
 ### 3.3 Token 单一来源
 
-- `--type-*` 只在 `globals.css` 定义,组件**只引用**,不写 `leading-[1.2]` 这类魔法值
+- `--leading-*` / `--tracking-*` 只在 `globals.css` 定义,组件**只引用**,不写 `leading-[1.2]` 这类魔法值
 - 与阶段 1 颜色 token 规则一致(单一来源、易调)
 
 ---
@@ -331,12 +332,12 @@ export const WUXING_FLOW_INDEX: Readonly<Record<BeastId, number>> = {
 
 ### 8.1 排版精度
 
-- [ ] `globals.css` 含 `--type-leading-tight/normal/loose` 与 `--type-tracking-display/body/mono` 共 6 个变量
+- [ ] `globals.css` 含 `--leading-tight/normal/loose` 与 `--tracking-display/body/mono` 共 6 个变量
 - [ ] Hero / BeastRoster 标题带 `leading-tight tracking-display`
 - [ ] 长文段落带 `leading-loose`
 - [ ] Code 元素带 `tracking-mono`
 - [ ] 组件中**无魔法数字**(`leading-[1.2]` 之类不出现)
-- [ ] grep 确认 `--type-` 在 `globals.css` 唯一定义,在组件中只引用
+- [ ] grep 确认 `--leading-` / `--tracking-` 在 `globals.css` 唯一定义,在组件中只引用
 
 ### 8.2 代码/引用区
 
@@ -393,7 +394,7 @@ export const WUXING_FLOW_INDEX: Readonly<Record<BeastId, number>> = {
 ## 10. 自我审查(Spec Self-Review)
 
 - [x] 无 "TBD" / "TODO" / 占位段落(已修:不再为 TTS 留 UI 占位)
-- [x] 内部一致:`--type-*` 只在 `globals.css` 定义,`.prose-ink` 只在 `@layer components`,`.reveal-beast` 只在非 `@theme` 块
+- [x] 内部一致:`--leading-*` / `--tracking-*` 只在 `globals.css` 定义,`.prose-ink` 只在 `@layer components`,`.reveal-beast` 只在非 `@theme` 块
 - [x] 范围聚焦:阶段 2 = 形(精调 + 动画),声延后到阶段 5+ 候选
 - [x] 无歧义:每节有可观察的产物和验收标准
 - [x] 不重复造轮子:沿用阶段 1 颜色 token 与 `inkDrop` / `fadeInUp` 体系

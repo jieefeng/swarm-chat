@@ -18,7 +18,7 @@
 |------|--------|----------------|
 | `agenthub/frontend/lib/wuxing.ts` | Modify | Add `WUXING_FLOW_INDEX` helper exporting `pm→0, qa→1, orchestrator→2, developer→3, architect→4` |
 | `agenthub/frontend/lib/hooks/useReducedMotion.ts` | Create | SSR-safe hook reading `prefers-reduced-motion`; **not consumed this phase** |
-| `agenthub/frontend/app/globals.css` | Modify | Add `--type-*` tokens, `.prose-ink`, `.lift-ink`/`.focus-ink`/`.press-ink`, `inkReveal` keyframe, `.reveal-beast`, reduced-motion media query |
+| `agenthub/frontend/app/globals.css` | Modify | Add `--leading-*` / `--tracking-*` tokens, `.prose-ink`, `.lift-ink`/`.focus-ink`/`.press-ink`, `inkReveal` keyframe, `.reveal-beast`, reduced-motion media query |
 | `agenthub/frontend/components/landing/HeroSection.tsx` | Modify | Add `leading-tight tracking-display` to title (Hero already has it; we'll only adjust the副标题) |
 | `agenthub/frontend/components/landing/WuxingFlow.tsx` | Modify | Add `className="reveal-beast"` + `style.animationDelay` to 5 nodes; add `prose-ink` to tooltip content; reduce animation impact on hover |
 | `agenthub/frontend/components/landing/BeastRoster.tsx` | Modify | Replace ad-hoc hover transition with `lift-ink focus-ink`; add `reveal-beast` + `animationDelay`; add `prose-ink` to card body |
@@ -234,18 +234,19 @@ git -C "D:/AAComputerCourse/AACode/muiltAgent" commit -m "feat(frontend): add us
 
 Read `agenthub/frontend/app/globals.css` lines 5-40. Confirm the `@theme { ... }` block contains `--font-display`, `--font-body`, `--font-mono`. We append after `--font-mono` declaration.
 
-- [ ] **Step 2: Add `--type-*` variables**
+- [ ] **Step 2: Add `--leading-*` / `--tracking-*` variables**
 
 After `--font-mono: "JetBrains Mono", "Fira Code", "Consolas", monospace;` (line 34), insert a blank line, then:
 
 ```css
-  /* 类型尺度(行高 / 字距) */
-  --type-leading-tight: 1.2;        /* 标题、卡片标题 */
-  --type-leading-normal: 1.6;       /* 正文 */
-  --type-leading-loose: 1.75;       /* 长文(README / 长段气泡) */
-  --type-tracking-display: 0.02em;  /* display 字体微紧 */
-  --type-tracking-body: 0;          /* body 默认 */
-  --type-tracking-mono: -0.01em;    /* code 字符收紧 */
+  /* 类型尺度(行高 / 字距) — 必须用 Tailwind v4 识别的 --leading-* / --tracking-* 命名空间 */
+  /* 才会自动生成对应 utility class(如 leading-tight, tracking-display) */
+  --leading-tight: 1.2;             /* 标题、卡片标题(覆盖默认 1.25) */
+  --leading-normal: 1.6;            /* 正文 */
+  --leading-loose: 1.75;            /* 长文(README / 长段气泡) */
+  --tracking-display: 0.02em;       /* display 字体微紧 */
+  --tracking-body: 0;               /* body 默认 */
+  --tracking-mono: -0.01em;         /* code 字符收紧 */
 ```
 
 - [ ] **Step 3: Verify variables compile**
@@ -256,13 +257,13 @@ Expected: 0 errors (these are CSS, not TS — this just confirms we didn't break
 - [ ] **Step 4: Verify variables present in file**
 
 Run: `grep -E '\-\-type-(leading|tracking)' "D:/AAComputerCourse/AACode/muiltAgent/agenthub/frontend/app/globals.css"`
-Expected: 6 lines, matching `--type-leading-tight/normal/loose` and `--type-tracking-display/body/mono`.
+Expected: 6 lines, matching `--leading-tight/normal/loose` and `--tracking-display/body/mono`.
 
 - [ ] **Step 5: Commit**
 
 ```bash
 git -C "D:/AAComputerCourse/AACode/muiltAgent" add agenthub/frontend/app/globals.css
-git -C "D:/AAComputerCourse/AACode/muiltAgent" commit -m "feat(frontend): add --type-* typography tokens (leading + tracking) to globals.css"
+git -C "D:/AAComputerCourse/AACode/muiltAgent" commit -m "feat(frontend): add --leading-* / --tracking-* typography tokens to globals.css"
 ```
 
 ---
@@ -883,7 +884,7 @@ git -C "D:/AAComputerCourse/AACode/muiltAgent" tag -a phase-2-form-complete -m "
 |--------|-------------|------|
 | §0 | Route map updated (TTS moved to phase 5+ candidate) | spec-only (already done) |
 | §2 | File structure map | Tasks 1-11 (all files covered) |
-| §3.1 | `--type-*` token definitions | Task 3 |
+| §3.1 | `--leading-*` / `--tracking-*` token definitions | Task 3 |
 | §3.2 | Typography precision in components | Task 11 (HeroSection) — also covered by Task 7 (BeastRoster) and Task 8 (WuxingFlow tooltip) |
 | §4.2 | `.prose-ink` definition | Task 4 |
 | §4.3 | Apply to WuxingFlow / BeastRoster | Tasks 7, 8 |
