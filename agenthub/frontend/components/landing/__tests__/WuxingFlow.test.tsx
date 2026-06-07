@@ -18,10 +18,10 @@ describe("WuxingFlow entrance animation", () => {
       expect(className).toContain("reveal-beast");
     });
     // stagger delay 0ms, 140ms, 280ms, 420ms, 560ms
-    expect(nodes[0]!.getAttribute("style")).toMatch(/animation-delay:\s*0ms/);
-    expect(nodes[1]!.getAttribute("style")).toMatch(/animation-delay:\s*140ms/);
-    expect(nodes[2]!.getAttribute("style")).toMatch(/animation-delay:\s*280ms/);
-    expect(nodes[3]!.getAttribute("style")).toMatch(/animation-delay:\s*420ms/);
-    expect(nodes[4]!.getAttribute("style")).toMatch(/animation-delay:\s*560ms/);
+    expect(nodes[0]?.getAttribute("style")).toMatch(/animation-delay:\s*0ms/);
+    expect(nodes[1]?.getAttribute("style")).toMatch(/animation-delay:\s*140ms/);
+    expect(nodes[2]?.getAttribute("style")).toMatch(/animation-delay:\s*280ms/);
+    expect(nodes[3]?.getAttribute("style")).toMatch(/animation-delay:\s*420ms/);
+    expect(nodes[4]?.getAttribute("style")).toMatch(/animation-delay:\s*560ms/);
   });
 });
