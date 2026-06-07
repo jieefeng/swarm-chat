@@ -1,7 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { type BeastId, WUXING_BEASTS, WUXING_FLOW_ORDER } from "@/lib/wuxing";
+import {
+  type BeastId,
+  WUXING_BEASTS,
+  WUXING_FLOW_INDEX,
+  WUXING_FLOW_ORDER,
+} from "@/lib/wuxing";
 
 const CENTER_X = 200;
 const CENTER_Y = 200;
@@ -107,11 +112,15 @@ export function WuxingFlow() {
                   role="button"
                   tabIndex={0}
                   aria-label={step.beast.nickname}
+                  className="reveal-beast"
+                  style={{
+                    cursor: "pointer",
+                    animationDelay: `${WUXING_FLOW_INDEX[step.id] * 140}ms`,
+                  }}
                   onMouseEnter={() => setHovered(step.id)}
                   onMouseLeave={() => setHovered(null)}
                   onFocus={() => setHovered(step.id)}
                   onBlur={() => setHovered(null)}
-                  style={{ cursor: "pointer" }}
                 >
                   <circle
                     cx={p.x}
@@ -156,22 +165,22 @@ export function WuxingFlow() {
               const b = WUXING_BEASTS.find((beast) => beast.id === hovered)!;
               return (
                 <div
-                  className="rounded-2xl p-6 border-2"
+                  className="prose-ink rounded-2xl p-6 border-2"
                   style={{
                     borderColor: b.color.primary,
                     backgroundColor: b.color.secondary,
                   }}
                 >
-                  <div className="font-display text-xl text-ink mb-1">
+                  <div className="font-display text-xl text-ink mb-1 leading-tight tracking-display">
                     {b.nickname} · {b.verb}
                   </div>
                   <div className="font-body text-xs text-ink/60 mb-3">
                     {b.role} · {b.element} · {b.direction} · {b.season}
                   </div>
-                  <p className="font-body text-sm text-ink/80 italic mb-3">
+                  <p className="font-body text-sm text-ink/80 italic mb-3 leading-normal">
                     「{b.catchphrase}」
                   </p>
-                  <p className="font-body text-xs text-ink/60 leading-relaxed">
+                  <p className="font-body text-xs text-ink/60 leading-normal">
                     擅长：{b.strengths.join("、")}
                   </p>
                 </div>
