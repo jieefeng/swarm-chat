@@ -1,5 +1,5 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, waitFor, fireEvent, act } from "@testing-library/react";
 import { ThreadList } from "../ThreadList";
 import { useThreadStore } from "@/lib/stores/threadStore";
 import { api } from "@/lib/api";
@@ -154,5 +154,72 @@ describe("ThreadList 清理其他按钮 - always-visible 两态渲染", () => {
     expect(dialog).toBeInTheDocument();
     expect(dialog).toHaveTextContent("1");
     expect(dialog).toHaveTextContent("会话 A");
+  });
+});
+
+describe("ThreadList 清理成功 toast - 显示/消失/store 同步", () => {
+  const threadB = { ...baseThread, id: "thread_b", title: "会话 B" };
+
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("B1: 清理成功后,屏幕出现「已清理 1 个会话」toast", async () => {
+    mockedApi.getThreads.mockResolvedValueOnce({ threads: [baseThread, threadB] });
+    mockedApi.deleteAllThreads.mockResolvedValue({ success: true, deleted_count: 1 });
+    // refetch 后服务端只剩 A
+    mockedApi.getThreads.mockResolvedValueOnce({ threads: [baseThread] });
+
+    render(<ThreadList onThreadSelect={vi.fn()} />);
+
+    const btn = await screen.findByRole("button", { name: /^清理其他会话$/ });
+    fireEvent.click(btn);
+
+    const confirmBtn = await screen.findByRole("button", { name: "确定清理" });
+    fireEvent.click(confirmBtn);
+
+    const toast = await screen.findByRole("status");
+    expect(toast).toHaveTextContent("已清理 1 个会话");
+  });
+
+  it("B2: 2 秒后 toast 从 DOM 消失", async () => {
+    mockedApi.getThreads.mockResolvedValueOnce({ threads: [baseThread, threadB] });
+    mockedApi.deleteAllThreads.mockResolvedValue({ success: true, deleted_count: 1 });
+    mockedApi.getThreads.mockResolvedValueOnce({ threads: [baseThread] });
+
+    render(<ThreadList onThreadSelect={vi.fn()} />);
+
+    const btn = await screen.findByRole("button", { name: /^清理其他会话$/ });
+    fireEvent.click(btn);
+    fireEvent.click(await screen.findByRole("button", { name: "确定清理" }));
+
+    await screen.findByRole("status");
+
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("B3: cleanup 后 store 必须与 refetch 后的服务端列表一致(只剩 keepThread)", async () => {
+    mockedApi.getThreads.mockResolvedValueOnce({ threads: [baseThread, threadB] });
+    mockedApi.deleteAllThreads.mockResolvedValue({ success: true, deleted_count: 1 });
+    mockedApi.getThreads.mockResolvedValueOnce({ threads: [baseThread] });
+
+    render(<ThreadList onThreadSelect={vi.fn()} />);
+
+    const btn = await screen.findByRole("button", { name: /^清理其他会话$/ });
+    fireEvent.click(btn);
+    fireEvent.click(await screen.findByRole("button", { name: "确定清理" }));
+
+    await waitFor(() => {
+      const state = useThreadStore.getState();
+      expect(state.threads.map((t) => t.id)).toEqual(["thread_a"]);
+    });
   });
 });

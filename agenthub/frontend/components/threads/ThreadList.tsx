@@ -33,6 +33,7 @@ export function ThreadList({
   const [deleteTargetTitle, setDeleteTargetTitle] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     const loadThreads = async () => {
@@ -53,6 +54,12 @@ export function ThreadList({
 
     loadThreads();
   }, []); // 只在挂载时执行一次
+
+  useEffect(() => {
+    if (!toast) return;
+    const id = setTimeout(() => setToast(null), 2000);
+    return () => clearTimeout(id);
+  }, [toast]);
 
   const handleCreateThread = async () => {
     if (onThreadCreate) {
@@ -122,6 +129,7 @@ export function ThreadList({
         setCurrentThreadId(null);
       }
       setShowCleanupModal(false);
+      setToast(`已清理 ${deletableCount} 个会话`);
     } catch (err) {
       console.error("Failed to cleanup threads:", err);
       setCleanupError(err instanceof Error ? err.message : "清理失败，请重试");
@@ -135,7 +143,17 @@ export function ThreadList({
   const deletableCount = Math.max(0, threads.length - 1);
 
   return (
-    <div className="w-64 flex flex-col border-r border-ink/[0.08] bg-paper-dark/50">
+    <div className="w-64 relative flex flex-col border-r border-ink/[0.08] bg-paper-dark/50">
+      {/* Toast - 清理成功轻量提示 */}
+      {toast && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="absolute top-2 left-1/2 -translate-x-1/2 z-50 px-3 py-1.5 text-xs font-body text-gold-dim bg-gold/[0.08] border border-gold/20 rounded-md shadow-sm"
+        >
+          {toast}
+        </div>
+      )}
       {/* Header */}
       <div className="p-4 border-b border-ink/[0.08]">
         <h2 className="font-display text-sm font-semibold text-ink/80 mb-3 tracking-wide">
