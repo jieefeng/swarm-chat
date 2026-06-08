@@ -223,3 +223,25 @@ describe("ThreadList 清理成功 toast - 显示/消失/store 同步", () => {
     });
   });
 });
+
+describe("ThreadList 清理失败 - modal 错误显示 + 不弹 toast", () => {
+  const threadB = { ...baseThread, id: "thread_b", title: "会话 B" };
+
+  it("C1: deleteAllThreads 抛错时,modal 显示错误条,且 toast 不出现", async () => {
+    mockedApi.getThreads.mockResolvedValueOnce({ threads: [baseThread, threadB] });
+    mockedApi.deleteAllThreads.mockRejectedValue(new Error("网络异常,请重试"));
+
+    render(<ThreadList onThreadSelect={vi.fn()} />);
+
+    const btn = await screen.findByRole("button", { name: /^清理其他会话$/ });
+    fireEvent.click(btn);
+    fireEvent.click(await screen.findByRole("button", { name: "确定清理" }));
+
+    // 错误条出现 (ConfirmDialog 内部用 role="alert" 渲染错误)
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("网络异常,请重试");
+
+    // toast 不应出现
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+});
