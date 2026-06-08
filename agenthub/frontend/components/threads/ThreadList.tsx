@@ -23,7 +23,6 @@ export function ThreadList({
     isLoading,
     setThreads,
     setCurrentThreadId,
-    removeThread,
     setLoading,
   } = useThreadStore();
 
@@ -78,18 +77,19 @@ export function ThreadList({
     try {
       await api.deleteThread(deleteTargetId);
 
-      // 先获取当前状态，再更新 store
-      const currentThreads = threads;
-      const wasCurrentThread = currentThreadId === deleteTargetId;
+      // 防御性同步: 删除成功后立即从服务端拉取最新列表
+      // (避免本地 store 状态在极端情况下与 DB 不一致,导致 UI 残留)
+      const { threads: latestThreads } = await api.getThreads();
+      setThreads(latestThreads || []);
 
-      removeThread(deleteTargetId);
-
-      // 如果删除的是当前会话，切换到下一个会话
-      if (wasCurrentThread && currentThreads.length > 1) {
-        const nextThread = currentThreads.find((t) => t.id !== deleteTargetId);
+      // 如果删除的是当前会话,从最新列表中切到下一个;无下一个则清空
+      if (currentThreadId === deleteTargetId) {
+        const nextThread = latestThreads?.[0];
         if (nextThread) {
           setCurrentThreadId(nextThread.id);
           onThreadSelect(nextThread.id);
+        } else {
+          setCurrentThreadId(null);
         }
       }
       setDeleteTargetId(null);
@@ -112,8 +112,15 @@ export function ThreadList({
     setIsCleanupLoading(true);
     try {
       await api.deleteAllThreads(currentThreadId);
-      const keepThread = threads.find((t) => t.id === currentThreadId);
-      setThreads(keepThread ? [keepThread] : []);
+
+      // 防御性同步: 批量清理后从服务端拉取最新列表
+      const { threads: latestThreads } = await api.getThreads();
+      setThreads(latestThreads || []);
+
+      // 兜底: 若当前会话不在最新列表里(异常情况),清空选中
+      if (!latestThreads?.some((t) => t.id === currentThreadId)) {
+        setCurrentThreadId(null);
+      }
       setShowCleanupModal(false);
     } catch (err) {
       console.error("Failed to cleanup threads:", err);
@@ -135,17 +142,36 @@ export function ThreadList({
           会话列表
         </h2>
         <div className="flex items-center gap-2">
-          {threads.length > 1 && currentThreadId && (
-            <button
-              onClick={() => setShowCleanupModal(true)}
-              disabled={isLoading}
-              title="清理其他会话"
-              aria-label="清理其他会话"
-              className="flex-shrink-0 p-2 text-ink/30 hover:text-danger border border-ink/[0.08] hover:border-danger/30 rounded-lg transition-colors disabled:opacity-40"
-            >
-              <TrashIcon className="w-4 h-4" />
-            </button>
-          )}
+          {(() => {
+            const canCleanup = threads.length > 1 && currentThreadId !== null;
+            if (canCleanup) {
+              return (
+                <button
+                  type="button"
+                  onClick={() => setShowCleanupModal(true)}
+                  disabled={isLoading}
+                  title="清理其他会话"
+                  aria-label="清理其他会话"
+                  className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 text-xs font-body text-danger/80 bg-danger/[0.06] border border-danger/15 rounded-lg hover:bg-danger/10 hover:border-danger/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <TrashIcon className="w-3.5 h-3.5" />
+                  清理其他
+                </button>
+              );
+            }
+            return (
+              <button
+                type="button"
+                disabled
+                title="当前没有其他会话可清理"
+                aria-label="当前没有其他会话可清理"
+                className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 text-xs font-body text-ink/25 bg-ink/[0.02] border border-ink/[0.08] rounded-lg cursor-not-allowed"
+              >
+                <TrashIcon className="w-3.5 h-3.5" />
+                清理其他
+              </button>
+            );
+          })()}
           <div className="flex-1">
             <NewThreadButton
               onClick={handleCreateThread}
