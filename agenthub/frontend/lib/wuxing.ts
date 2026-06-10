@@ -9,7 +9,7 @@ export type WuxingDirection = "东" | "北" | "西" | "南" | "中";
 export type WuxingSeason = "春" | "冬" | "秋" | "夏" | "季";
 export type WuxingVerb = "谋" | "稳" | "快" | "严" | "调";
 
-export type BeastId = "pm" | "architect" | "developer" | "qa" | "orchestrator";
+export type BeastId = "designer" | "developer" | "qa" | "orchestrator";
 
 export interface WuxingBeast {
   id: BeastId;
@@ -19,7 +19,7 @@ export interface WuxingBeast {
   direction: WuxingDirection;
   season: WuxingSeason;
   verb: WuxingVerb;
-  role: string; // "产品经理（PM）"
+  role: string; // "创意设计师"
   /** 取自 globals.css --color-wuxing-*，写常量便于 SSR/CSR 一致 */
   color: { primary: string; secondary: string };
   svgPath: string; // "/avatars/qinglong.svg"
@@ -31,36 +31,20 @@ export interface WuxingBeast {
 
 export const WUXING_BEASTS: readonly WuxingBeast[] = [
   {
-    id: "pm",
+    id: "designer",
     beast: "青龙",
     nickname: "苍龙",
     element: "木",
     direction: "东",
     season: "春",
     verb: "谋",
-    role: "产品经理（PM）",
+    role: "创意设计师",
     color: { primary: "#3a7d52", secondary: "#d6e8df" },
     svgPath: "/avatars/qinglong.svg",
     personality: "深谋远虑，运筹帷幄。看似温和实则果决，关键时刻一锤定音",
     catchphrase: "且慢，先理清需求再动手",
-    strengths: ["需求分析", "全局规划", "用户洞察", "优先级判断"],
-    caution: "不擅长技术细节，需要玄武辅助",
-  },
-  {
-    id: "architect",
-    beast: "玄武",
-    nickname: "玄冥",
-    element: "水",
-    direction: "北",
-    season: "冬",
-    verb: "稳",
-    role: "系统架构师",
-    color: { primary: "#3a6a9a", secondary: "#d6e2ee" },
-    svgPath: "/avatars/xuanwu.svg",
-    personality: "沉稳如山，万年不动。话少但每句都是深思熟虑",
-    catchphrase: "根基不稳，地动山摇",
-    strengths: ["系统设计", "架构评审", "技术选型", "性能优化"],
-    caution: "过于保守，有时需要啸风推一把",
+    strengths: ["视觉设计", "用户体验", "创意方案", "产品规划"],
+    caution: "不擅长技术细节，需要啸风辅助",
   },
   {
     id: "developer",
@@ -70,12 +54,12 @@ export const WUXING_BEASTS: readonly WuxingBeast[] = [
     direction: "西",
     season: "秋",
     verb: "快",
-    role: "全栈开发者",
+    role: "核心开发者",
     color: { primary: "#9a7b2e", secondary: "#ebe0c4" },
     svgPath: "/avatars/baihu.svg",
     personality: "雷厉风行，执行力拉满。写代码快如闪电，偶尔毛躁",
     catchphrase: "说干就干，废话少说",
-    strengths: ["快速开发", "代码实现", "问题修复", "技术落地"],
+    strengths: ["需求分析", "架构设计", "代码实现", "调试修复", "性能优化"],
     caution: "速度优先时容易埋 bug，需要炎翎把关",
   },
   {
@@ -86,12 +70,12 @@ export const WUXING_BEASTS: readonly WuxingBeast[] = [
     direction: "南",
     season: "夏",
     verb: "严",
-    role: "QA 工程师",
+    role: "质量守护者",
     color: { primary: "#b03a2e", secondary: "#eed4d0" },
     svgPath: "/avatars/zhuque.svg",
     personality: "火眼金睛，一丝不苟。对 bug 零容忍，但对人很温柔",
     catchphrase: "这点小把戏，还想瞒过我？",
-    strengths: ["bug 检测", "测试覆盖", "质量把关", "边界分析"],
+    strengths: ["代码审查", "测试覆盖", "质量保证", "安全审计"],
     caution: "过于追求完美，有时吹毛求疵",
   },
   {
@@ -112,25 +96,23 @@ export const WUXING_BEASTS: readonly WuxingBeast[] = [
   },
 ] as const;
 
-/** 五行相生流转顺序（取自 orchestrator.py:25 "五行相生（任务流转顺序建议）"） */
+/** 五行相生流转顺序（3 核心 Agent + orchestrator） */
 export const WUXING_FLOW_ORDER: readonly BeastId[] = [
-  "pm", // 苍龙(谋·定策) →
-  "qa", // 炎翎(严·试火) →
-  "orchestrator", // 瑞麟(调·调度) →
-  "developer", // 啸风(快·锻冶) →
-  "architect", // 玄冥(稳·筑基) → 回到苍龙
+  "designer",    // 苍龙(谋·定策) →
+  "developer",   // 啸风(快·锻冶) →
+  "qa",          // 炎翎(严·试火) →
+  "orchestrator", // 瑞麟(调·调度) → 回到苍龙
 ] as const;
 
 /**
  * 五行相生流转顺序索引（用于 stagger 入场动画的 delay 序号）
- * 0..4，值与 WUXING_FLOW_ORDER 的位置严格一致。
+ * 0..3，值与 WUXING_FLOW_ORDER 的位置严格一致。
  */
 export const WUXING_FLOW_INDEX: Readonly<Record<BeastId, number>> = {
-  pm: 0,
-  qa: 1,
-  orchestrator: 2,
-  developer: 3,
-  architect: 4,
+  designer: 0,
+  developer: 1,
+  qa: 2,
+  orchestrator: 3,
 };
 
 export function getBeastById(id: BeastId): WuxingBeast | undefined {
