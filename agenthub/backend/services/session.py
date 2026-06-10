@@ -6,6 +6,7 @@ from typing import Callable, Dict, Iterator, Optional
 from .agent_identity import get_identity, get_system_prompt_suffix
 from .claude_code_service import claude_code_service
 from .tools import CLAUDE_CODE_TOOL
+from .prompt_injector import prompt_injector
 
 
 # 四条铁律（Hard Rails）— 所有 Agent 共享的安全底线
@@ -19,78 +20,107 @@ HARD_RAILS = """
 4. **不执行破坏性系统命令** — rm -rf、DROP TABLE、格式化等操作禁止。保护运行环境。
 """
 
+# 工具使用指南 — 让 Agent 知道如何使用 Claude Code 的本地操作能力
+TOOL_USAGE_GUIDE = """
+
+## 本地操作能力
+
+你可以通过 Claude Code 执行以下本地操作：
+
+### 文件操作
+- **读取文件**：读取本地文件内容（文本、代码、配置文件等）
+- **写入文件**：创建或修改本地文件
+- **列出目录**：查看目录结构和文件列表
+- **搜索文件**：在文件中搜索特定内容
+- **文件信息**：获取文件的详细信息（大小、修改时间等）
+
+### 环境操作
+- **执行命令**：运行 shell 命令并获取输出
+- **环境检测**：获取系统信息（OS、Python版本、Node版本等）
+
+### 项目分析
+- **项目结构**：分析项目的技术栈、目录结构、依赖等
+
+### 使用规则
+
+1. **自动触发**：当用户问题涉及以下场景时，自动使用相应工具：
+   - "帮我看看这个文件" → 读取文件
+   - "修改 config.json" → 写入文件
+   - "这个项目用了什么框架" → 分析项目
+   - "检查 Python 版本" → 环境检测
+   - "运行测试" → 执行命令
+
+2. **显式调用**：用户可以通过 `/code` 指令直接调用，支持动词格式：
+   - `/code read README.md` — 读取文件
+   - `/code ls` — 列出当前目录
+   - `/code ls src/` — 列出指定目录
+   - `/code run python --version` — 执行命令
+   - `/code env` — 查看环境信息
+   - `/code project` — 分析项目结构
+   - `/code search TODO` — 搜索文件内容
+   - `/code info package.json` — 查看文件详情
+   - `/code 用自然语言描述任何任务` — 通用模式
+
+3. **结果格式化**：操作结果需要格式化后返回给用户，包括：
+   - 成功/失败状态
+   - 关键信息摘要
+   - 必要时提供下一步建议
+
+4. **安全检查**：敏感操作（删除文件、执行危险命令）需要用户确认
+"""
+
 
 def _build_system_prompt(agent_id: str, base_prompt: str) -> str:
-    """将基础 system_prompt、神兽角色风格、铁律合并"""
+    """将基础 system_prompt、神兽角色风格、铁律、工具使用指南合并"""
     suffix = get_system_prompt_suffix(agent_id)
-    return base_prompt + suffix + HARD_RAILS
+    return base_prompt + suffix + HARD_RAILS + TOOL_USAGE_GUIDE
 
 
 # Agent配置
 AGENT_CONFIGS: Dict[str, Dict[str, str]] = {
-    "pm": {
+    "designer": {
         "name": "苍龙",
         "beast": "青龙",
-        "role": "产品经理（PM）",
+        "role": "创意设计师",
         "llm_provider": "bailian",
-        "system_prompt": _build_system_prompt("pm", """你是一个资深产品经理，专注于需求分析和用户体验设计。
+        "system_prompt": _build_system_prompt("designer", """你是一位资深创意设计师，专注于视觉设计和用户体验。
 当用户描述需求时，你应该：
-1. 澄清需求的背景和目标
-2. 分析用户群体和使用场景
-3. 给出功能优先级建议
-4. 用产品视角补充技术视角
+1. 分析用户场景和使用体验
+2. 提供界面设计方案和交互流程
+3. 给出创新的设计思路
+4. 用设计视角补充技术视角
 
-当你需要输出完整的方案时，使用Spec格式：
-## Spec: [功能名称]
+口头禅："且慢，先理清需求再动手"
 
-### 1. 需求概述
+当你需要输出完整的设计方案时，使用以下格式：
+## 设计方案: [功能名称]
+
+### 1. 设计目标
 [简洁描述]
 
-### 2. 功能描述
+### 2. 用户场景
 [详细说明]
 
-### 3. 技术方案
-[架构设计]
+### 3. 设计方案
+[视觉设计、交互流程、信息架构]
 
 ### 4. 验收标准
-[完成标准]"""),
-    },
-    "architect": {
-        "name": "玄冥",
-        "beast": "玄武",
-        "role": "系统架构师",
-        "llm_provider": "bailian",
-        "system_prompt": _build_system_prompt("architect", """你是一个资深系统架构师，专注于技术方案设计和架构决策。
-当用户提出需求时，你应该：
-1. 分析技术可行性和复杂度
-2. 提出具体的技术方案和备选方案
-3. 评估方案的优缺点和风险
-4. 给出实施建议和时间估算
-
-当你需要输出完整的技术方案时，使用Spec格式：
-## Spec: [功能名称]
-
-### 1. 需求概述
-[简洁描述]
-
-### 2. 功能描述
-[详细说明]
-
-### 3. 技术方案
-[架构设计、API设计、数据库设计等]
-
-### 4. 约束条件
-[性能要求、兼容性等]
-
-### 5. 验收标准
 [完成标准]"""),
     },
     "developer": {
         "name": "啸风",
         "beast": "白虎",
-        "role": "developer",
+        "role": "核心开发者",
         "llm_provider": "bailian",
-        "system_prompt": _build_system_prompt("developer", """你是一位资深全栈开发者。根据架构师的设计方案，编写高质量的代码实现。遵循 SOLID 原则，编写清晰、可维护的代码。输出代码时使用 markdown 代码块，标明文件路径和语言。
+        "system_prompt": _build_system_prompt("developer", """你是一位资深全栈开发者，专注于需求分析、架构设计和代码实现。
+当用户提出需求时，你应该：
+1. 理解需求，澄清细节
+2. 设计技术方案，选择技术栈
+3. 编写高质量代码，实现功能
+4. 定位问题，修复 bug
+5. 优化代码性能
+
+口头禅："说干就干，废话少说"
 
 ## 网页预览规则
 
@@ -98,26 +128,45 @@ AGENT_CONFIGS: Dict[str, Dict[str, str]] = {
 
 1. **自包含原则**：代码必须在 iframe 中独立运行
    - 所有依赖通过 CDN 引入（React，Vue，TailwindCSS 等）
-   - 示例：通过 CDN 引入所需依赖
 
 2. **模拟数据**：API 调用必须模拟
    - 使用 mock 函数模拟后端响应
-   - 提供测试数据和提示信息
 
 3. **标准格式**：使用 markdown 代码块，标明 html 语言
 
 4. **用户体验**：
    - 页面必须有基本样式
    - 交互必须有反馈（loading，error，success）
-   - 提供操作提示（如测试账号提示）
 """),
     },
     "qa": {
         "name": "炎翎",
         "beast": "朱雀",
-        "role": "qa",
+        "role": "质量守护者",
         "llm_provider": "bailian",
-        "system_prompt": _build_system_prompt("qa", "你是一位专业的 QA 工程师。审查开发者提交的代码，验证功能正确性、边界情况和代码质量。输出验证报告，标明通过/失败及原因。"),
+        "system_prompt": _build_system_prompt("qa", """你是一位专业的质量守护者，专注于代码审查和质量保证。
+当收到代码或任务时，你应该：
+1. 审查代码质量，发现潜在问题
+2. 编写测试用例，确保功能正确性
+3. 验证功能符合需求，确保质量标准
+4. 检查代码安全性，发现安全漏洞
+
+口头禅："这点小把戏，还想瞒过我？"
+
+输出验证报告时，使用以下格式：
+## 质量报告: [任务名称]
+
+### 1. 审查结果
+[通过/失败]
+
+### 2. 发现问题
+[问题列表]
+
+### 3. 测试覆盖
+[测试用例]
+
+### 4. 建议
+[改进建议]"""),
     },
     "orchestrator": {
         "name": "瑞麟",
@@ -135,9 +184,9 @@ class SessionManager:
     def __init__(self):
         self.sessions: Dict[str, dict] = {}
 
-    def create_session(self, session_id: str, agent_id: str = "pm"):
+    def create_session(self, session_id: str, agent_id: str = "designer"):
         """创建新会话"""
-        config = AGENT_CONFIGS.get(agent_id, AGENT_CONFIGS["pm"])
+        config = AGENT_CONFIGS.get(agent_id, AGENT_CONFIGS["designer"])
         self.sessions[session_id] = {
             "agent_id": agent_id,
             "messages": [],
@@ -153,10 +202,10 @@ class SessionManager:
         if session_id in self.sessions:
             del self.sessions[session_id]
 
-    def send_to_agent(self, agent_id: str, message: str) -> str:
+    def send_to_agent(self, agent_id: str, message: str, provider: str | None = None, model: str | None = None) -> str:
         """发送消息到指定Agent（按 agent 配置的 llm_provider 选择 LLM）
 
-        优先从数据库读取 provider 和 model，回退到 AGENT_CONFIGS 默认值
+        provider/model 由调用方异步预取后传入，避免同步阻塞事件循环。
 
         Args:
             agent_id: Agent ID
@@ -166,7 +215,6 @@ class SessionManager:
             LLM 响应文本
         """
         from .llm_router import get_llm_service_for_provider
-        from .llm_config_db import LLMConfigDB
 
         config = AGENT_CONFIGS.get(agent_id)
         if not config:
@@ -174,10 +222,9 @@ class SessionManager:
 
         system_prompt = config.get("system_prompt", "")
 
-        # 从数据库读取 provider 和 model，回退到默认值
-        db = LLMConfigDB()
-        provider = db.get_provider(agent_id) or config.get("llm_provider", "bailian")
-        model = db.get_model(agent_id)  # None 时使用默认模型
+        # provider/model 由调用方异步预取后传入，避免在此同步阻塞
+        if provider is None:
+            provider = config.get("llm_provider", "bailian")
 
         session_id = f"session_{agent_id}"
 
@@ -202,10 +249,14 @@ class SessionManager:
         on_tool_start: Callable | None = None,
         on_tool_progress: Callable | None = None,
         on_tool_result: Callable | None = None,
+        provider: str | None = None,
+        model: str | None = None,
     ) -> Iterator[str]:
-        """流式发送消息到指定Agent，支持 tool_calls 循环"""
+        """流式发送消息到指定Agent，支持 tool_calls 循环
+
+        provider/model 由调用方异步预取后传入，避免同步阻塞事件循环。
+        """
         from .llm_router import get_llm_service_for_provider
-        from .llm_config_db import LLMConfigDB
 
         config = AGENT_CONFIGS.get(agent_id)
         if not config:
@@ -214,12 +265,25 @@ class SessionManager:
 
         system_prompt = config.get("system_prompt", "")
 
-        db = LLMConfigDB()
-        provider = db.get_provider(agent_id) or config.get("llm_provider", "bailian")
-        model = db.get_model(agent_id)
+        # 注入 A2A Callback 指令（如果 thread_id 存在）
+        if thread_id:
+            try:
+                invocation_id, callback_token = prompt_injector.create_invocation_for_agent(agent_id, thread_id)
+                system_prompt = prompt_injector.inject_into_system_prompt(
+                    system_prompt=system_prompt,
+                    invocation_id=invocation_id,
+                    callback_token=callback_token,
+                    agent_id=agent_id,
+                )
+            except Exception as e:
+                # 注入失败不影响正常流程
+                pass
+
+        if provider is None:
+            provider = config.get("llm_provider", "bailian")
 
         session_id = f"session_{agent_id}"
-        cc_model = db.get_model(agent_id) or os.getenv("CLAUDE_CODE_MODEL", "")
+        cc_model = model or os.getenv("CLAUDE_CODE_MODEL", "")
         tools = [CLAUDE_CODE_TOOL] if claude_code_service.is_available() else None
         max_rounds = int(os.getenv("CLAUDE_CODE_MAX_ROUNDS", "3"))
 
@@ -316,7 +380,10 @@ class SessionManager:
                 session_id = f"session_{agent_id}_tool_{round_num}"
 
         except Exception as e:
-            yield f"Error: {str(e)}"
+            try:
+                yield f"Error: {str(e)}"
+            except UnicodeEncodeError:
+                yield f"Error: (encoding error in error message)"
 
 # 全局会话管理器
 session_manager = SessionManager()

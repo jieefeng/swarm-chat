@@ -1,8 +1,14 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor, fireEvent, act } from "@testing-library/react";
-import { ThreadList } from "../ThreadList";
-import { useThreadStore } from "@/lib/stores/threadStore";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "@/lib/api";
+import { useThreadStore } from "@/lib/stores/threadStore";
+import { ThreadList } from "../ThreadList";
 
 vi.mock("@/lib/api", () => ({
   api: {
@@ -135,12 +141,16 @@ describe("ThreadList 清理其他按钮 - always-visible 两态渲染", () => {
 
     render(<ThreadList onThreadSelect={vi.fn()} />);
 
-    const btn = await screen.findByRole("button", { name: /当前没有其他会话可清理/ });
+    const btn = await screen.findByRole("button", {
+      name: /当前没有其他会话可清理/,
+    });
     expect(btn).toBeDisabled();
   });
 
   it("A2: 2+ 会话时,按钮 enabled 且带文字「清理其他」,点击打开 cleanup modal", async () => {
-    mockedApi.getThreads.mockResolvedValueOnce({ threads: [baseThread, threadB] });
+    mockedApi.getThreads.mockResolvedValueOnce({
+      threads: [baseThread, threadB],
+    });
 
     render(<ThreadList onThreadSelect={vi.fn()} />);
 
@@ -169,8 +179,13 @@ describe("ThreadList 清理成功 toast - 显示/消失/store 同步", () => {
   });
 
   it("B1: 清理成功后,屏幕出现「已清理 1 个会话」toast", async () => {
-    mockedApi.getThreads.mockResolvedValueOnce({ threads: [baseThread, threadB] });
-    mockedApi.deleteAllThreads.mockResolvedValue({ success: true, deleted_count: 1 });
+    mockedApi.getThreads.mockResolvedValueOnce({
+      threads: [baseThread, threadB],
+    });
+    mockedApi.deleteAllThreads.mockResolvedValue({
+      success: true,
+      deleted_count: 1,
+    });
     // refetch 后服务端只剩 A
     mockedApi.getThreads.mockResolvedValueOnce({ threads: [baseThread] });
 
@@ -187,8 +202,13 @@ describe("ThreadList 清理成功 toast - 显示/消失/store 同步", () => {
   });
 
   it("B2: 2 秒后 toast 从 DOM 消失", async () => {
-    mockedApi.getThreads.mockResolvedValueOnce({ threads: [baseThread, threadB] });
-    mockedApi.deleteAllThreads.mockResolvedValue({ success: true, deleted_count: 1 });
+    mockedApi.getThreads.mockResolvedValueOnce({
+      threads: [baseThread, threadB],
+    });
+    mockedApi.deleteAllThreads.mockResolvedValue({
+      success: true,
+      deleted_count: 1,
+    });
     mockedApi.getThreads.mockResolvedValueOnce({ threads: [baseThread] });
 
     render(<ThreadList onThreadSelect={vi.fn()} />);
@@ -207,8 +227,13 @@ describe("ThreadList 清理成功 toast - 显示/消失/store 同步", () => {
   });
 
   it("B3: cleanup 后 store 必须与 refetch 后的服务端列表一致(只剩 keepThread)", async () => {
-    mockedApi.getThreads.mockResolvedValueOnce({ threads: [baseThread, threadB] });
-    mockedApi.deleteAllThreads.mockResolvedValue({ success: true, deleted_count: 1 });
+    mockedApi.getThreads.mockResolvedValueOnce({
+      threads: [baseThread, threadB],
+    });
+    mockedApi.deleteAllThreads.mockResolvedValue({
+      success: true,
+      deleted_count: 1,
+    });
     mockedApi.getThreads.mockResolvedValueOnce({ threads: [baseThread] });
 
     render(<ThreadList onThreadSelect={vi.fn()} />);
@@ -228,7 +253,9 @@ describe("ThreadList 清理失败 - modal 错误显示 + 不弹 toast", () => {
   const threadB = { ...baseThread, id: "thread_b", title: "会话 B" };
 
   it("C1: deleteAllThreads 抛错时,modal 显示错误条,且 toast 不出现", async () => {
-    mockedApi.getThreads.mockResolvedValueOnce({ threads: [baseThread, threadB] });
+    mockedApi.getThreads.mockResolvedValueOnce({
+      threads: [baseThread, threadB],
+    });
     mockedApi.deleteAllThreads.mockRejectedValue(new Error("网络异常,请重试"));
 
     render(<ThreadList onThreadSelect={vi.fn()} />);
