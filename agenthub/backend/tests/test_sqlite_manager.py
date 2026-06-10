@@ -80,8 +80,8 @@ async def test_add_message(db):
         thread_id=thread_id,
         role="assistant",
         content="Hello!",
-        agent_id="pm",
-        sender_name="PM Agent",
+        agent_id="designer",
+        sender_name="Designer Agent",
     )
 
     assert msg_id.startswith("msg_")
@@ -92,8 +92,8 @@ async def test_add_message(db):
     msg = messages[0]
     assert msg["role"] == "assistant"
     assert msg["content"] == "Hello!"
-    assert msg["agent_id"] == "pm"
-    assert msg["sender_name"] == "PM Agent"
+    assert msg["agent_id"] == "designer"
+    assert msg["sender_name"] == "Designer Agent"
 
 
 @pytest.mark.asyncio

@@ -17,7 +17,7 @@ class TestToolCallsLoop:
                 mock_llm.send_message_stream.return_value = iter(["普通回复"])
                 mock_get.return_value = mock_llm
 
-                chunks = list(sm.send_to_agent_stream("pm", "你好"))
+                chunks = list(sm.send_to_agent_stream("designer", "你好"))
                 assert "".join(chunks) == "普通回复"
                 call_kwargs = mock_llm.send_message_stream.call_args
                 assert call_kwargs[1].get("tools") is None
@@ -49,7 +49,7 @@ class TestToolCallsLoop:
                 mock_get.return_value = mock_llm
 
                 results = []
-                for chunk in sm.send_to_agent_stream("pm", "读取 main.py"):
+                for chunk in sm.send_to_agent_stream("designer", "读取 main.py"):
                     results.append(chunk)
 
                 mock_cc.execute.assert_called_once()
@@ -68,7 +68,7 @@ class TestToolCallsEdgeCases:
                 mock_llm.send_message_stream.return_value = iter(["回复"])
                 mock_get.return_value = mock_llm
 
-                list(sm.send_to_agent_stream("pm", "你好"))
+                list(sm.send_to_agent_stream("designer", "你好"))
                 call_kwargs = mock_llm.send_message_stream.call_args
                 assert call_kwargs[1].get("tools") is not None
 
@@ -101,7 +101,7 @@ class TestToolCallsEdgeCases:
                 mock_llm.send_message_stream.side_effect = [iter([mock_chunk]) for _ in range(4)]
                 mock_get.return_value = mock_llm
 
-                list(sm.send_to_agent_stream("pm", "loop"))
+                list(sm.send_to_agent_stream("designer", "loop"))
 
                 # max_rounds=3, so range(3+1) = 4 calls
                 assert mock_llm.send_message_stream.call_count == 4
@@ -136,7 +136,7 @@ class TestToolCallsEdgeCases:
                 mock_get.return_value = mock_llm
 
                 list(sm.send_to_agent_stream(
-                    "pm", "test",
+                    "designer", "test",
                     on_tool_start=on_tool_start,
                     on_tool_result=on_tool_result,
                 ))

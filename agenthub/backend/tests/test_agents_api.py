@@ -23,13 +23,13 @@ class TestAgentsLLMConfigAPI:
         response = client.get("/api/agents/llm-config", headers=HEADERS)
         assert response.status_code == 200
         data = response.json()
-        assert "pm" in data
-        assert "llm_provider" in data["pm"]
+        assert "designer" in data
+        assert "llm_provider" in data["designer"]
 
     def test_update_llm_config(self):
-        """PUT /api/agents/pm/llm-config 更新配置"""
+        """PUT /api/agents/designer/llm-config 更新配置"""
         response = client.put(
-            "/api/agents/pm/llm-config",
+            "/api/agents/designer/llm-config",
             headers=HEADERS,
             json={"llm_provider": "anthropic"}
         )
@@ -40,7 +40,7 @@ class TestAgentsLLMConfigAPI:
     def test_update_invalid_provider(self):
         """PUT 无效 provider 返回 422"""
         response = client.put(
-            "/api/agents/pm/llm-config",
+            "/api/agents/designer/llm-config",
             headers=HEADERS,
             json={"llm_provider": "invalid"}
         )

@@ -10,8 +10,8 @@ def test_add_tasks_from_orchestrator():
     output = OrchestratorOutput(
         analysis="Test",
         tasks=[
-            TaskCreate(title="T1", description="D1", assigned_to="pm"),
-            TaskCreate(title="T2", description="D2", assigned_to="dev", depends_on=["T1"]),
+            TaskCreate(title="T1", description="D1", assigned_to="designer"),
+            TaskCreate(title="T2", description="D2", assigned_to="developer", depends_on=["T1"]),
         ]
     )
     tasks = tm.add_tasks_from_orchestrator(output)
@@ -24,8 +24,8 @@ def test_get_ready_tasks():
     output = OrchestratorOutput(
         analysis="Test",
         tasks=[
-            TaskCreate(title="T1", description="D1", assigned_to="pm"),
-            TaskCreate(title="T2", description="D2", assigned_to="dev", depends_on=["T1"]),
+            TaskCreate(title="T1", description="D1", assigned_to="designer"),
+            TaskCreate(title="T2", description="D2", assigned_to="developer", depends_on=["T1"]),
         ]
     )
     tm.add_tasks_from_orchestrator(output)
@@ -36,8 +36,8 @@ def test_get_ready_tasks():
 
 def test_has_cycle_detection():
     tm = TaskManager()
-    t1 = Task(title="T1", description="D1", assigned_to="pm")
-    t2 = Task(title="T2", description="D2", assigned_to="pm", depends_on=[t1.id])
+    t1 = Task(title="T1", description="D1", assigned_to="designer")
+    t2 = Task(title="T2", description="D2", assigned_to="designer", depends_on=[t1.id])
     t1.depends_on = [t2.id]
     tm._tasks = {t1.id: t1, t2.id: t2}
     assert tm.has_cycle() is True
@@ -45,8 +45,8 @@ def test_has_cycle_detection():
 
 def test_no_cycle():
     tm = TaskManager()
-    t1 = Task(title="T1", description="D1", assigned_to="pm")
-    t2 = Task(title="T2", description="D2", assigned_to="pm", depends_on=[t1.id])
+    t1 = Task(title="T1", description="D1", assigned_to="designer")
+    t2 = Task(title="T2", description="D2", assigned_to="designer", depends_on=[t1.id])
     tm._tasks = {t1.id: t1, t2.id: t2}
     assert tm.has_cycle() is False
 
@@ -54,14 +54,14 @@ def test_no_cycle():
 @pytest.mark.asyncio
 async def test_execute_task_success():
     tm = TaskManager()
-    task = Task(title="T1", description="D1", assigned_to="pm")
+    task = Task(title="T1", description="D1", assigned_to="designer")
     tm._tasks[task.id] = task
     mock_adapter = AsyncMock()
     mock_adapter.send_message = AsyncMock(return_value="done")
     with patch("services.task_manager.sse_manager") as mock_sse, \
-         patch("services.task_manager.AGENT_CONFIGS", {"pm": {"system_prompt": "test"}}, create=True):
+         patch("services.task_manager.AGENT_CONFIGS", {"designer": {"system_prompt": "test"}}, create=True):
         mock_sse.broadcast = AsyncMock()
-        with patch.dict("sys.modules", {"services.session": type("M", (), {"AGENT_CONFIGS": {"pm": {"system_prompt": "test"}}})}):
+        with patch.dict("sys.modules", {"services.session": type("M", (), {"AGENT_CONFIGS": {"designer": {"system_prompt": "test"}}})}):
             await tm.execute_task(task, mock_adapter)
     assert task.status == TaskStatus.DONE
     assert task.result == "done"
@@ -70,13 +70,13 @@ async def test_execute_task_success():
 @pytest.mark.asyncio
 async def test_execute_task_failure_retries():
     tm = TaskManager()
-    task = Task(title="T1", description="D1", assigned_to="pm")
+    task = Task(title="T1", description="D1", assigned_to="designer")
     tm._tasks[task.id] = task
     mock_adapter = AsyncMock()
     mock_adapter.send_message = AsyncMock(side_effect=Exception("LLM error"))
     with patch("services.task_manager.sse_manager") as mock_sse:
         mock_sse.broadcast = AsyncMock()
-        with patch.dict("sys.modules", {"services.session": type("M", (), {"AGENT_CONFIGS": {"pm": {"system_prompt": "test"}}})}):
+        with patch.dict("sys.modules", {"services.session": type("M", (), {"AGENT_CONFIGS": {"designer": {"system_prompt": "test"}}})}):
             await tm.execute_task(task, mock_adapter)
     assert task.status == TaskStatus.FAILED
     assert task.retry_count == 1
@@ -85,14 +85,14 @@ async def test_execute_task_failure_retries():
 @pytest.mark.asyncio
 async def test_execute_task_escalate_after_max_retry():
     tm = TaskManager()
-    task = Task(title="T1", description="D1", assigned_to="pm")
+    task = Task(title="T1", description="D1", assigned_to="designer")
     task.retry_count = 2  # Already retried twice
     tm._tasks[task.id] = task
     mock_adapter = AsyncMock()
     mock_adapter.send_message = AsyncMock(side_effect=Exception("LLM error"))
     with patch("services.task_manager.sse_manager") as mock_sse:
         mock_sse.broadcast = AsyncMock()
-        with patch.dict("sys.modules", {"services.session": type("M", (), {"AGENT_CONFIGS": {"pm": {"system_prompt": "test"}}})}):
+        with patch.dict("sys.modules", {"services.session": type("M", (), {"AGENT_CONFIGS": {"designer": {"system_prompt": "test"}}})}):
             await tm.execute_task(task, mock_adapter)
     assert task.status == TaskStatus.ESCALATE
     assert task.retry_count == 3
@@ -100,7 +100,7 @@ async def test_execute_task_escalate_after_max_retry():
 
 def test_reset_tasks():
     tm = TaskManager()
-    t1 = Task(title="T1", description="D1", assigned_to="pm")
+    t1 = Task(title="T1", description="D1", assigned_to="designer")
     t1.status = TaskStatus.DONE
     t1.result = "some result"
     t1.retry_count = 2

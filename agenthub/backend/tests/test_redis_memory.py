@@ -40,13 +40,13 @@ class TestRedisMemoryManager:
     async def test_add_agent_message(self, redis_memory):
         """添加 Agent 消息后，type 为 agent"""
         msg = await redis_memory.add_message(
-            role="agent", content="我是助手", agent_id="pm",
-            sender_name="产品经理"
+            role="agent", content="我是助手", agent_id="designer",
+            sender_name="创意设计师"
         )
         assert msg["role"] == "agent"
         assert msg["type"] == "agent"
-        assert msg["agent_id"] == "pm"
-        assert msg["sender_name"] == "产品经理"
+        assert msg["agent_id"] == "designer"
+        assert msg["sender_name"] == "创意设计师"
 
     @pytest.mark.asyncio
     async def test_get_messages_returns_latest(self, redis_memory):
@@ -92,10 +92,10 @@ class TestRedisMemoryManager:
     async def test_get_context_for_agent(self, redis_memory):
         """get_context_for_agent 返回格式化的上下文字符串"""
         await redis_memory.add_message(role="user", content="你好")
-        await redis_memory.add_message(role="agent", content="你好，我是PM", agent_id="pm")
-        context = await redis_memory.get_context_for_agent(agent_id="pm", limit=5)
+        await redis_memory.add_message(role="agent", content="你好，我是设计师", agent_id="designer")
+        context = await redis_memory.get_context_for_agent(agent_id="designer", limit=5)
         assert "[user]: 你好" in context
-        assert "[agent]: 你好，我是PM" in context
+        assert "[agent]: 你好，我是设计师" in context
 
     @pytest.mark.asyncio
     async def test_default_user_id(self, redis_memory):

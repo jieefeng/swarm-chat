@@ -12,7 +12,7 @@ async def test_decompose_valid_json():
 {
   "analysis": "用户要建一个登录页面",
   "tasks": [
-    {"title": "设计登录页面", "description": "设计UI", "assigned_to": "pm", "depends_on": [], "priority": "high"},
+    {"title": "设计登录页面", "description": "设计UI", "assigned_to": "designer", "depends_on": [], "priority": "high"},
     {"title": "实现登录API", "description": "写后端", "assigned_to": "developer", "depends_on": ["设计登录页面"], "priority": "high"}
   ],
   "requires_clarification": false,
@@ -32,7 +32,7 @@ async def test_decompose_self_correction():
     mock_adapter = AsyncMock()
     mock_adapter.send_message = AsyncMock(side_effect=[
         "invalid json here",
-        '{"analysis":"ok","tasks":[{"title":"T1","description":"D1","assigned_to":"pm"}],"requires_clarification":false,"clarification_question":null,"uncertain_points":[]}'
+        '{"analysis":"ok","tasks":[{"title":"T1","description":"D1","assigned_to":"designer"}],"requires_clarification":false,"clarification_question":null,"uncertain_points":[]}'
     ])
     agent = OrchestratorAgent(adapter=mock_adapter)
     output = await agent.decompose("test")
