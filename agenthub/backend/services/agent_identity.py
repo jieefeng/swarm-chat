@@ -144,21 +144,13 @@ def get_system_prompt_suffix(agent_id: str) -> str:
 
 # 羁绊关系映射表 — (agent_a, agent_b) -> 关系描述
 BOND_MAP: Dict[tuple[str, str], Dict[str, str]] = {
-    ("pm", "orchestrator"): {
-        "name": "将相和",
-        "description": "苍龙与瑞麟是领导搭档——一个定方向，一个调资源。协作时要互相尊重对方的判断。",
+    ("designer", "developer"): {
+        "name": "设计驱动",
+        "description": "苍龙出设计方案，啸风负责实现。苍龙的设计方案要具有可行性，啸风要尊重设计意图。",
     },
-    ("orchestrator", "pm"): {
-        "name": "将相和",
-        "description": "瑞麟与苍龙是领导搭档——苍龙负责需求判断，瑞麟负责资源调度。",
-    },
-    ("architect", "developer"): {
-        "name": "刚柔并济",
-        "description": "玄冥与啸风是设计实现搭档——玄冥画蓝图，啸风挥锤建造。啸风要尊重玄冥的架构设计，玄冥要考虑啸风的实现效率。",
-    },
-    ("developer", "architect"): {
-        "name": "刚柔并济",
-        "description": "啸风与玄冥是设计实现搭档——玄冥画蓝图，啸风挥锤建造。遇到架构问题要找玄冥确认。",
+    ("developer", "designer"): {
+        "name": "设计驱动",
+        "description": "啸风根据苍龙的设计方案进行开发。遇到设计问题要找苍龙确认。",
     },
     ("developer", "qa"): {
         "name": "相爱相杀",
@@ -168,13 +160,17 @@ BOND_MAP: Dict[tuple[str, str], Dict[str, str]] = {
         "name": "磨刀石",
         "description": "炎翎是啸风的磨刀石——审查时要犀利但不失温度，通过时要给予认可。每次审查都是让啸风更强。",
     },
-    ("pm", "architect"): {
-        "name": "谋定后动",
-        "description": "苍龙负责需求，玄冥负责架构。苍龙的需求分析需要玄冥的技术可行性验证。",
+    ("designer", "qa"): {
+        "name": "品质闭环",
+        "description": "苍龙的设计方案需要炎翎从用户体验角度验证。炎翎的反馈帮助苍龙优化设计。",
     },
-    ("architect", "pm"): {
+    ("qa", "designer"): {
+        "name": "品质闭环",
+        "description": "炎翎从质量角度审查苍龙的设计方案，确保设计方案可落地、无歧义。",
+    },
+    ("orchestrator", "designer"): {
         "name": "谋定后动",
-        "description": "玄冥的架构设计要服务于苍龙的产品规划。技术方案要对齐产品目标。",
+        "description": "瑞麟调度任务，苍龙负责需求分析和设计方案。",
     },
     ("orchestrator", "developer"): {
         "name": "令行禁止",

@@ -154,3 +154,30 @@ class TestSessionManager:
         from agenthub.backend.services.agent_identity import get_nickname
         assert get_nickname("designer") == "苍龙"
         assert get_nickname("pm") == "pm"  # 已不存在，返回原 ID
+
+    # --- BOND_MAP 测试 ---
+
+    def test_bond_map_no_pm_or_architect(self):
+        """验证 BOND_MAP 中不存在 pm/architect 相关羁绊"""
+        from agenthub.backend.services.agent_identity import BOND_MAP
+        for (a, b) in BOND_MAP.keys():
+            assert a not in ("pm", "architect"), f"Found stale agent '{a}' in BOND_MAP"
+            assert b not in ("pm", "architect"), f"Found stale agent '{b}' in BOND_MAP"
+
+    def test_bond_map_has_designer_developer(self):
+        """验证 designer-developer 羁绊存在"""
+        from agenthub.backend.services.agent_identity import BOND_MAP
+        assert ("designer", "developer") in BOND_MAP
+        assert ("developer", "designer") in BOND_MAP
+
+    def test_bond_map_has_developer_qa(self):
+        """验证 developer-qa 羁绊存在"""
+        from agenthub.backend.services.agent_identity import BOND_MAP
+        assert ("developer", "qa") in BOND_MAP
+        assert ("qa", "developer") in BOND_MAP
+
+    def test_get_bond_context_designer_developer(self):
+        """验证羁绊上下文生成正确"""
+        from agenthub.backend.services.agent_identity import get_bond_context
+        ctx = get_bond_context("designer", ["developer"])
+        assert "设计" in ctx or "方案" in ctx
