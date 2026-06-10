@@ -126,3 +126,31 @@ class TestSessionManager:
     def test_agent_configs_qa_updated_role(self):
         """验证 qa 角色更新为质量守护者"""
         assert AGENT_CONFIGS["qa"]["role"] == "质量守护者"
+
+    # --- AGENT_IDENTITIES 测试 ---
+
+    def test_agent_identities_has_designer(self):
+        """验证 designer 身份配置存在"""
+        from agenthub.backend.services.agent_identity import AGENT_IDENTITIES
+        assert "designer" in AGENT_IDENTITIES
+        assert AGENT_IDENTITIES["designer"]["beast"] == "青龙"
+        assert AGENT_IDENTITIES["designer"]["element"] == "木"
+
+    def test_agent_identities_no_pm_or_architect(self):
+        """验证 pm 和 architect 身份已移除"""
+        from agenthub.backend.services.agent_identity import AGENT_IDENTITIES
+        assert "pm" not in AGENT_IDENTITIES
+        assert "architect" not in AGENT_IDENTITIES
+
+    def test_get_identity_designer(self):
+        """验证 get_identity 返回 designer 信息"""
+        from agenthub.backend.services.agent_identity import get_identity
+        identity = get_identity("designer")
+        assert identity is not None
+        assert identity["nickname"] == "苍龙"
+
+    def test_get_nickname_designer(self):
+        """验证 get_nickname 返回 designer 昵称"""
+        from agenthub.backend.services.agent_identity import get_nickname
+        assert get_nickname("designer") == "苍龙"
+        assert get_nickname("pm") == "pm"  # 已不存在，返回原 ID
