@@ -47,3 +47,19 @@ async def test_decompose_fallback_on_repeated_failure():
     output = await agent.decompose("test")
     assert output.tasks == []
     assert "降级" in output.analysis
+
+
+def test_orchestrator_prompt_references_three_agents():
+    """验证 orchestrator prompt 引用 3 个核心 agent"""
+    from agenthub.backend.services.orchestrator import ORCHESTRATOR_SYSTEM_PROMPT
+    assert "designer" in ORCHESTRATOR_SYSTEM_PROMPT
+    assert "developer" in ORCHESTRATOR_SYSTEM_PROMPT
+    assert "qa" in ORCHESTRATOR_SYSTEM_PROMPT
+    assert "pm" not in ORCHESTRATOR_SYSTEM_PROMPT
+    assert "architect" not in ORCHESTRATOR_SYSTEM_PROMPT
+
+
+def test_orchestrator_prompt_assigned_to_values():
+    """验证 assigned_to 提示值为 designer/developer/qa"""
+    from agenthub.backend.services.orchestrator import ORCHESTRATOR_SYSTEM_PROMPT
+    assert "designer/developer/qa" in ORCHESTRATOR_SYSTEM_PROMPT
