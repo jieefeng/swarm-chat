@@ -12,7 +12,7 @@ const makeAgent = (id: string, nickname: string): Agent => ({
 });
 
 const agents: Agent[] = [
-  makeAgent("pm", "产品"),
+  makeAgent("designer", "设计"),
   makeAgent("dev", "开发"),
   makeAgent("qa", "测试"),
 ];
@@ -28,7 +28,7 @@ describe("AgentSelector", () => {
         onSetDefault={vi.fn()}
       />,
     );
-    expect(screen.getByText("产品")).toBeInTheDocument();
+    expect(screen.getByText("设计")).toBeInTheDocument();
     expect(screen.getByText("开发")).toBeInTheDocument();
     expect(screen.getByText("测试")).toBeInTheDocument();
   });
@@ -57,8 +57,8 @@ describe("AgentSelector", () => {
         onSetDefault={vi.fn()}
       />,
     );
-    const pmChip = screen.getByText("产品").closest("[role='button']");
-    expect(pmChip).not.toHaveTextContent("默认");
+    const designerChip = screen.getByText("设计").closest("[role='button']");
+    expect(designerChip).not.toHaveTextContent("默认");
   });
 
   it("shows 设为默认 button on non-default chips", () => {
@@ -71,9 +71,9 @@ describe("AgentSelector", () => {
         onSetDefault={vi.fn()}
       />,
     );
-    const pmChip = screen.getByText("产品").closest("[role='button']");
+    const designerChip = screen.getByText("设计").closest("[role='button']");
     expect(
-      pmChip?.querySelector("button[aria-label='设为默认']"),
+      designerChip?.querySelector("button[aria-label='设为默认']"),
     ).toBeInTheDocument();
   });
 
@@ -104,11 +104,11 @@ describe("AgentSelector", () => {
         onSetDefault={onSetDefault}
       />,
     );
-    const pmChip = screen.getByText("产品").closest("[role='button']");
-    const btn = pmChip?.querySelector(
+    const designerChip = screen.getByText("设计").closest("[role='button']");
+    const btn = designerChip?.querySelector(
       "button[aria-label='设为默认']",
     ) as HTMLButtonElement;
     fireEvent.click(btn);
-    expect(onSetDefault).toHaveBeenCalledWith("pm");
+    expect(onSetDefault).toHaveBeenCalledWith("designer");
   });
 });

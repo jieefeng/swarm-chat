@@ -8,7 +8,7 @@ class Message(BaseModel):
 
     Attributes:
         id: 消息唯一标识
-        sender: 发送者ID: "pm", "architect", "user"
+        sender: 发送者ID: "designer", "developer", "qa", "user"
         sender_name: 显示名称
         content: 消息内容
         timestamp: Unix时间戳
