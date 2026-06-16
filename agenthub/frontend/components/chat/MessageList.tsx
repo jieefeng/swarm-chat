@@ -16,11 +16,12 @@ export function MessageList({ messages, scrollRef }: MessageListProps) {
   const ref = scrollRef ?? internalRef;
   const agents = useAgentStore((s) => s.agents);
 
+  // 新消息到达时自动滚动到底部
   useEffect(() => {
     if (ref.current) {
       ref.current.scrollTop = ref.current.scrollHeight;
     }
-  }, [ref]);
+  }, [ref, messages]);
 
   // 构建 agent_id -> color 映射
   const agentColorMap = new Map<string, string>();

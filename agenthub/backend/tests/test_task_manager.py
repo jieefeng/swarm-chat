@@ -1,34 +1,16 @@
 """TaskManager 测试"""
 import pytest
 from unittest.mock import AsyncMock, patch
-from agenthub.backend.models.task import Task, TaskCreate, TaskStatus, OrchestratorOutput
+from agenthub.backend.models.task import Task, TaskCreate, TaskStatus
 from agenthub.backend.services.task_manager import TaskManager
-
-
-def test_add_tasks_from_orchestrator():
-    tm = TaskManager()
-    output = OrchestratorOutput(
-        analysis="Test",
-        tasks=[
-            TaskCreate(title="T1", description="D1", assigned_to="designer"),
-            TaskCreate(title="T2", description="D2", assigned_to="developer", depends_on=["T1"]),
-        ]
-    )
-    tasks = tm.add_tasks_from_orchestrator(output)
-    assert len(tasks) == 2
-    assert tasks[1].depends_on == [tasks[0].id]
 
 
 def test_get_ready_tasks():
     tm = TaskManager()
-    output = OrchestratorOutput(
-        analysis="Test",
-        tasks=[
-            TaskCreate(title="T1", description="D1", assigned_to="designer"),
-            TaskCreate(title="T2", description="D2", assigned_to="developer", depends_on=["T1"]),
-        ]
-    )
-    tm.add_tasks_from_orchestrator(output)
+    t1 = Task(title="T1", description="D1", assigned_to="designer")
+    t2 = Task(title="T2", description="D2", assigned_to="developer", depends_on=[t1.id])
+    tm._tasks = {t1.id: t1, t2.id: t2}
+    tm._title_to_id = {"T1": t1.id, "T2": t2.id}
     ready = tm.get_ready_tasks()
     assert len(ready) == 1
     assert ready[0].title == "T1"

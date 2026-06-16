@@ -9,7 +9,7 @@ export type WuxingDirection = "东" | "北" | "西" | "南" | "中";
 export type WuxingSeason = "春" | "冬" | "秋" | "夏" | "季";
 export type WuxingVerb = "谋" | "稳" | "快" | "严" | "调";
 
-export type BeastId = "designer" | "developer" | "qa" | "orchestrator";
+export type BeastId = "designer" | "developer" | "qa";
 
 export interface WuxingBeast {
   id: BeastId;
@@ -78,41 +78,23 @@ export const WUXING_BEASTS: readonly WuxingBeast[] = [
     strengths: ["代码审查", "测试覆盖", "质量保证", "安全审计"],
     caution: "过于追求完美，有时吹毛求疵",
   },
-  {
-    id: "orchestrator",
-    beast: "麒麟",
-    nickname: "瑞麟",
-    element: "土",
-    direction: "中",
-    season: "季",
-    verb: "调",
-    role: "任务协调器",
-    color: { primary: "#8a6840", secondary: "#e6dcc8" },
-    svgPath: "/avatars/qilin.svg",
-    personality: "居中调度，调和五行。不偏不倚，公正无私",
-    catchphrase: "诸位稍安，容我梳理一番",
-    strengths: ["任务分解", "资源调度", "冲突调解", "流程把控"],
-    caution: "不直接产出代码，依赖其他神兽执行",
-  },
 ] as const;
 
-/** 五行相生流转顺序（3 核心 Agent + orchestrator） */
+/** 五行相生流转顺序（3 核心 Agent） */
 export const WUXING_FLOW_ORDER: readonly BeastId[] = [
-  "designer",    // 苍龙(谋·定策) →
-  "developer",   // 啸风(快·锻冶) →
-  "qa",          // 炎翎(严·试火) →
-  "orchestrator", // 瑞麟(调·调度) → 回到苍龙
+  "designer", // 苍龙(谋·定策) →
+  "developer", // 啸风(快·锻冶) →
+  "qa", // 炎翎(严·试火) → 回到苍龙
 ] as const;
 
 /**
  * 五行相生流转顺序索引（用于 stagger 入场动画的 delay 序号）
- * 0..3，值与 WUXING_FLOW_ORDER 的位置严格一致。
+ * 0..2，值与 WUXING_FLOW_ORDER 的位置严格一致。
  */
 export const WUXING_FLOW_INDEX: Readonly<Record<BeastId, number>> = {
   designer: 0,
   developer: 1,
   qa: 2,
-  orchestrator: 3,
 };
 
 export function getBeastById(id: BeastId): WuxingBeast | undefined {

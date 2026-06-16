@@ -16,27 +16,13 @@ export function ThreadItem({
   onClick,
   onDelete,
 }: ThreadItemProps) {
+  // 后端 sqlite_manager._now_ms() 存的是毫秒时间戳;直接传给 Date 即可
   const formatDate = (timestamp: number) => {
-    const date = new Date(timestamp * 1000);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) {
-      return date.toLocaleTimeString("zh-CN", {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    } else if (diffDays === 1) {
-      return "昨天";
-    } else if (diffDays < 7) {
-      return `${diffDays} 天前`;
-    } else {
-      return date.toLocaleDateString("zh-CN", {
-        month: "short",
-        day: "numeric",
-      });
-    }
+    const date = new Date(timestamp);
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+    const dd = String(date.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
   };
 
   return (

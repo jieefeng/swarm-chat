@@ -12,6 +12,7 @@ export function ForumEntry() {
 
       <Link
         href="/forum"
+        prefetch
         className="press-ink focus-ink inline-block font-display text-base px-8 py-3 rounded-xl bg-ink text-paper hover:bg-ink-light transition-colors shadow-lg shadow-ink/20"
       >
         进议事堂 →

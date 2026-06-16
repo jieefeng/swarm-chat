@@ -6,11 +6,9 @@ import { WUXING_BEASTS } from "@/lib/wuxing";
 
 // 五行神兽 fallback SVG
 const BEAST_SVGS: Record<string, string> = {
-  pm: "龙",
-  architect: "龟",
+  designer: "龙",
   developer: "虎",
   qa: "雀",
-  orchestrator: "麟",
 };
 
 // 颜色从 wuxing.ts 取，按 element 索引

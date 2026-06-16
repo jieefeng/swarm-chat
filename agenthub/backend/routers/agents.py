@@ -4,6 +4,9 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, field_validator
 
+from agenthub.backend.services.database import get_db
+from agenthub.backend.services.llm_config_db import LLMConfigDB
+
 router = APIRouter(prefix="/api/agents", tags=["agents"])
 
 
@@ -41,25 +44,29 @@ class LLMConfigUpdate(BaseModel):
         return v
 
 
+async def _get_llm_db() -> LLMConfigDB:
+    """获取 LLMConfigDB 实例（复用共享连接）"""
+    db = await get_db()
+    return LLMConfigDB(db._db)
+
+
 @router.get("/llm-config")
 async def get_all_llm_config():
     """获取所有 Agent 的 LLM 配置"""
-    from agenthub.backend.services.llm_config_db import LLMConfigDB
-    db = LLMConfigDB()
-    return db.get_all_config()
+    llm_db = await _get_llm_db()
+    return await llm_db.get_all_config()
 
 
 @router.put("/{agent_id}/llm-config")
 async def update_llm_config(agent_id: str, body: LLMProviderUpdate):
     """更新指定 Agent 的 LLM 配置"""
-    from agenthub.backend.services.llm_config_db import LLMConfigDB
     from agenthub.backend.services.session import AGENT_CONFIGS
 
     if agent_id not in AGENT_CONFIGS:
         raise HTTPException(status_code=404, detail=f"Agent '{agent_id}' not found")
 
-    db = LLMConfigDB()
-    db.update_provider(agent_id, body.llm_provider)
+    llm_db = await _get_llm_db()
+    await llm_db.update_provider(agent_id, body.llm_provider)
 
     return {"agent_id": agent_id, "llm_provider": body.llm_provider}
 
@@ -67,46 +74,44 @@ async def update_llm_config(agent_id: str, body: LLMProviderUpdate):
 @router.get("/{agent_id}/config")
 async def get_agent_config(agent_id: str):
     """获取指定 Agent 的 LLM 配置"""
-    from agenthub.backend.services.llm_config_db import LLMConfigDB
     from agenthub.backend.services.session import AGENT_CONFIGS
 
     if agent_id not in AGENT_CONFIGS:
         raise HTTPException(status_code=404, detail=f"Agent '{agent_id}' not found")
 
-    db = LLMConfigDB()
-    provider = db.get_provider(agent_id)
-    model = db.get_model(agent_id)
+    llm_db = await _get_llm_db()
+    provider = await llm_db.get_provider(agent_id)
+    model = await llm_db.get_model(agent_id)
 
     return {
         "agent_id": agent_id,
         "llm_provider": provider,
-        "model": model
+        "model": model,
     }
 
 
 @router.put("/{agent_id}/config")
 async def update_agent_config(agent_id: str, body: LLMConfigUpdate):
     """更新指定 Agent 的 LLM 配置"""
-    from agenthub.backend.services.llm_config_db import LLMConfigDB
     from agenthub.backend.services.session import AGENT_CONFIGS
 
     if agent_id not in AGENT_CONFIGS:
         raise HTTPException(status_code=404, detail=f"Agent '{agent_id}' not found")
 
-    db = LLMConfigDB()
+    llm_db = await _get_llm_db()
 
     if body.llm_provider is not None:
-        db.update_provider(agent_id, body.llm_provider)
+        await llm_db.update_provider(agent_id, body.llm_provider)
 
     if body.model is not None:
-        db.update_model(agent_id, body.model)
+        await llm_db.update_model(agent_id, body.model)
 
     # 返回更新后的配置
-    provider = db.get_provider(agent_id)
-    model = db.get_model(agent_id)
+    provider = await llm_db.get_provider(agent_id)
+    model = await llm_db.get_model(agent_id)
 
     return {
         "agent_id": agent_id,
         "llm_provider": provider,
-        "model": model
+        "model": model,
     }

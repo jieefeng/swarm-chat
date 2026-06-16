@@ -1,7 +1,22 @@
 """AgentHub MVP - FastAPI主应用"""
 import sys
 import os
+import logging
+import asyncio
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor
+
+# 统一日志配置：所有模块使用 logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(name)s %(levelname)s: %(message)s",
+)
+
+# Windows 环境下设置 UTF-8 编码，避免 GBK 编码错误
+if sys.platform == "win32":
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 # 允许直接运行和模块导入两种方式
 _current_dir = Path(__file__).parent.resolve()
@@ -20,13 +35,24 @@ from agenthub.backend.services.sse_manager import sse_manager
 API_KEY = os.getenv("API_KEY", "dev-secret-key")
 PORT = int(os.getenv("PORT", "7010"))
 
+# 线程池大小：默认 20 个线程，可通过环境变量调整
+THREAD_POOL_SIZE = int(os.getenv("THREAD_POOL_SIZE", "20"))
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用生命周期管理"""
-    # 启动时
+    # 启动时：配置线程池大小，避免 Claude Code 等阻塞操作耗尽线程
+    loop = asyncio.get_event_loop()
+    executor = ThreadPoolExecutor(max_workers=THREAD_POOL_SIZE)
+    loop.set_default_executor(executor)
+    print(f"[LIFESPAN] Thread pool initialized with {THREAD_POOL_SIZE} workers")
+
     yield
+
     # 关闭时清理
+    executor.shutdown(wait=False)
+    print("[LIFESPAN] Thread pool shutdown")
 
 
 app = FastAPI(
@@ -70,18 +96,20 @@ async def verify_api_key(request: Request, call_next):
 
 
 # 注册路由
-from agenthub.backend.routers import messages, events, tasks, agents, threads
+from agenthub.backend.routers import messages, events, tasks, agents, threads, callbacks
 app.include_router(messages.router)
 app.include_router(events.router)
 app.include_router(tasks.router)
 app.include_router(agents.router)
 app.include_router(threads.router)
+app.include_router(callbacks.router)  # A2A Callback 路由
 
 
 @app.get("/health")
 async def health_check():
     """健康检查"""
-    return {"status": "ok", "subscribers": sse_manager.get_subscriber_count()}
+    subscriber_count = await sse_manager.get_subscriber_count()
+    return {"status": "ok", "subscribers": subscriber_count}
 
 
 @app.get("/")

@@ -1,13 +1,9 @@
 import { describe, expect, it } from "vitest";
-import {
-  WUXING_BEASTS,
-  WUXING_FLOW_INDEX,
-  WUXING_FLOW_ORDER,
-} from "../wuxing";
+import { WUXING_BEASTS, WUXING_FLOW_INDEX, WUXING_FLOW_ORDER } from "../wuxing";
 
 describe("WUXING_FLOW_ORDER", () => {
-  it("contains exactly 3 core agents + orchestrator", () => {
-    expect(WUXING_FLOW_ORDER).toEqual(["designer", "developer", "qa", "orchestrator"]);
+  it("contains exactly 3 core agents", () => {
+    expect(WUXING_FLOW_ORDER).toEqual(["designer", "developer", "qa"]);
   });
 
   it("no stale agent ids (pm, architect)", () => {
@@ -30,13 +26,12 @@ describe("WUXING_FLOW_INDEX", () => {
 });
 
 describe("WUXING_BEASTS", () => {
-  it("has 4 beasts (designer, developer, qa, orchestrator)", () => {
-    expect(WUXING_BEASTS).toHaveLength(4);
+  it("has 3 beasts (designer, developer, qa)", () => {
+    expect(WUXING_BEASTS).toHaveLength(3);
     const ids = WUXING_BEASTS.map((b) => b.id);
     expect(ids).toContain("designer");
     expect(ids).toContain("developer");
     expect(ids).toContain("qa");
-    expect(ids).toContain("orchestrator");
     expect(ids).not.toContain("pm");
     expect(ids).not.toContain("architect");
   });

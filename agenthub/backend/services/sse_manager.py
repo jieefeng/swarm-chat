@@ -1,9 +1,11 @@
 """SSE连接管理器 - 支持线程隔离"""
 import asyncio
-import threading
+import logging
 from typing import Dict, Optional
 from collections.abc import AsyncGenerator
 import json
+
+logger = logging.getLogger(__name__)
 
 
 class SSEManager:
@@ -15,7 +17,7 @@ class SSEManager:
     def __init__(self):
         # subscribers: {queue: Optional[thread_id]}
         self.subscribers: Dict[asyncio.Queue, Optional[str]] = {}
-        self._lock = threading.Lock()
+        self._lock = asyncio.Lock()
 
     async def subscribe(self, thread_id: Optional[str] = None) -> AsyncGenerator[dict, None]:
         """订阅SSE事件流
@@ -24,9 +26,9 @@ class SSEManager:
             thread_id: 订阅指定线程的事件。None 表示接收所有事件。
         """
         queue: asyncio.Queue = asyncio.Queue()
-        with self._lock:
+        async with self._lock:
             self.subscribers[queue] = thread_id
-        print(f"[SSE SUBSCRIBE] Subscriber added (thread_id={thread_id}). Total: {len(self.subscribers)}")
+        logger.info("Subscriber added (thread_id=%s). Total: %d", thread_id, len(self.subscribers))
 
         try:
             while True:
@@ -36,9 +38,9 @@ class SSEManager:
                 except asyncio.TimeoutError:
                     yield {"event": "keepalive", "data": json.dumps({"status": "ping"})}
         finally:
-            with self._lock:
+            async with self._lock:
                 del self.subscribers[queue]
-            print(f"[SSE SUBSCRIBE] Subscriber removed. Total: {len(self.subscribers)}")
+            logger.info("Subscriber removed. Total: %d", len(self.subscribers))
 
     async def broadcast(self, event_type: str, data: dict, thread_id: Optional[str] = None):
         """广播事件到订阅者
@@ -49,7 +51,7 @@ class SSEManager:
             thread_id: 线程 ID。如果指定，只发给订阅了该线程的客户端。
         """
         data_str = json.dumps(data, ensure_ascii=False)
-        print(f"[SSE BROADCAST] type={event_type}, thread_id={thread_id}, data={data_str[:200]}")
+        logger.debug("Broadcast type=%s, thread_id=%s", event_type, thread_id)
         event = {"event": event_type, "data": data_str}
 
         # 过滤逻辑：
@@ -57,7 +59,7 @@ class SSEManager:
         # - subscriber_thread_id=thread_id: 只接收该线程的事件
         # - thread_id=None: 全局事件，所有订阅者都能收到
         # Copy targets under lock, then release and iterate
-        with self._lock:
+        async with self._lock:
             targets = [
                 q for q, sid in self.subscribers.items()
                 if sid is None or thread_id is None or sid == thread_id
@@ -90,17 +92,18 @@ class SSEManager:
             "title": title,
         })
 
-    async def broadcast_clarification_request(self, message_id: str, question: str, options: list[str]) -> None:
+    async def broadcast_clarification_request(self, message_id: str, question: str, options: list[str],
+                                               thread_id: str | None = None) -> None:
         """广播 HITL 澄清请求"""
         await self.broadcast("clarification_request", {
             "message_id": message_id,
             "question": question,
             "options": options,
-        })
+        }, thread_id=thread_id)
 
-    def get_subscriber_count(self) -> int:
+    async def get_subscriber_count(self) -> int:
         """获取当前订阅者数量"""
-        with self._lock:
+        async with self._lock:
             return len(self.subscribers)
 
     async def broadcast_tool_start(self, agent_id: str, command: str,
@@ -129,6 +132,44 @@ class SSEManager:
             "content": content,
             "success": success,
             "message_id": message_id,
+        }, thread_id=thread_id)
+
+    # A2A 事件广播方法
+    async def broadcast_a2a_start(self, agent_id: str, depth: int,
+                                   thread_id: str | None = None) -> None:
+        """广播 A2A 链开始执行事件"""
+        await self.broadcast("a2a_start", {
+            "agent_id": agent_id,
+            "depth": depth,
+        }, thread_id=thread_id)
+
+    async def broadcast_a2a_progress(self, agent_id: str, depth: int,
+                                      thread_id: str | None = None) -> None:
+        """广播 A2A 链执行进度"""
+        await self.broadcast("a2a_progress", {
+            "agent_id": agent_id,
+            "depth": depth,
+        }, thread_id=thread_id)
+
+    async def broadcast_a2a_done(self, is_final: bool,
+                                  thread_id: str | None = None) -> None:
+        """广播 A2A 链完成事件"""
+        await self.broadcast("a2a_done", {
+            "is_final": is_final,
+        }, thread_id=thread_id)
+
+    async def broadcast_a2a_cancelled(self, reason: str,
+                                       thread_id: str | None = None) -> None:
+        """广播 A2A 链取消事件"""
+        await self.broadcast("a2a_cancelled", {
+            "reason": reason,
+        }, thread_id=thread_id)
+
+    async def broadcast_a2a_error(self, error: str,
+                                   thread_id: str | None = None) -> None:
+        """广播 A2A 链错误事件"""
+        await self.broadcast("a2a_error", {
+            "error": error,
         }, thread_id=thread_id)
 
 

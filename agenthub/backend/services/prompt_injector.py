@@ -123,12 +123,6 @@ curl -X GET "{self.api_url}/api/callbacks/pending-mentions?invocation_id={invoca
             "qa": """
 - 完成测试 → @developer（开发者）修复问题
 - 发现 bug → @developer（开发者）
-- 测试通过 → @orchestrator（协调器）确认完成
-""",
-            "orchestrator": """
-- 任务拆解完成 → 分配给相应 Agent
-- 进度更新 → 通知所有相关 Agent
-- 发现阻塞 → 协调解决
 """,
         }
 

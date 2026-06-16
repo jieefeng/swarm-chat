@@ -168,13 +168,6 @@ AGENT_CONFIGS: Dict[str, Dict[str, str]] = {
 ### 4. 建议
 [改进建议]"""),
     },
-    "orchestrator": {
-        "name": "瑞麟",
-        "beast": "麒麟",
-        "role": "orchestrator",
-        "llm_provider": "bailian",
-        "system_prompt": _build_system_prompt("orchestrator", "你是任务协调器。分析用户需求，将其拆解为可执行的任务列表，以 JSON 格式输出。每个任务包含 title, description, assigned_to, depends_on, priority 字段。如果需求不清晰，设置 requires_clarification=true 并提供 clarification_question。"),
-    },
 }
 
 

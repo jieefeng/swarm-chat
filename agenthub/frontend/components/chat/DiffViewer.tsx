@@ -1,7 +1,16 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
-import DiffViewerLib from "react-diff-viewer-continued";
+
+const DiffViewerLib = dynamic(() => import("react-diff-viewer-continued"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center py-8 text-ink/30 text-sm">
+      Loading diff viewer...
+    </div>
+  ),
+});
 
 interface DiffViewerProps {
   filePath: string;

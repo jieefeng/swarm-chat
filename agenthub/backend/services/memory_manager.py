@@ -1,18 +1,30 @@
 """内存管理器 - 消息历史存储"""
 import uuid
+import os
 from typing import List, Dict, Optional
 from datetime import datetime
+from collections import OrderedDict
 
 
 class MemoryManager:
     """管理对话消息历史（按线程隔离）"""
 
-    def __init__(self, max_messages: int = 1000):
-        self._threads: Dict[str, List[Dict]] = {}  # thread_id -> messages
+    def __init__(self, max_messages: int = 1000, max_threads: int = 100):
+        """
+        Args:
+            max_messages: 每个线程的最大消息数
+            max_threads: 最大线程数（防止内存无限增长）
+        """
+        self._threads: OrderedDict[str, List[Dict]] = OrderedDict()  # thread_id -> messages
         self.max_messages = max_messages
+        self.max_threads = max_threads
 
     def _get_thread(self, thread_id: str) -> List[Dict]:
         if thread_id not in self._threads:
+            # 如果达到线程数上限，删除最旧的线程
+            if len(self._threads) >= self.max_threads:
+                oldest_thread_id, _ = self._threads.popitem(last=False)
+                print(f"[MEMORY] Evicted oldest thread {oldest_thread_id} (max_threads={self.max_threads})")
             self._threads[thread_id] = []
         return self._threads[thread_id]
 
@@ -63,8 +75,11 @@ class MemoryManager:
             self._threads.clear()
 
 
-# 全局内存管理器实例
-memory_manager = MemoryManager()
+# 全局内存管理器实例（可通过环境变量配置）
+memory_manager = MemoryManager(
+    max_messages=int(os.getenv("MAX_MESSAGES", "1000")),
+    max_threads=int(os.getenv("MAX_THREADS", "100")),
+)
 
 
 import os
@@ -141,15 +156,17 @@ class RedisMemoryManager:
 
 
 def create_memory_manager():
-    """根据 STORAGE_BACKEND 环境变量创建对应的 memory manager"""
-    backend = os.getenv("STORAGE_BACKEND", "sqlite")  # 默认改为 sqlite
+    """根据 STORAGE_BACKEND 环境变量创建对应的 memory manager。
+
+    sqlite 模式复用 database.py 的单例连接，避免创建冗余实例和路径不一致。
+    """
+    backend = os.getenv("STORAGE_BACKEND", "sqlite")
     max_messages = int(os.getenv("MAX_MESSAGES", "1000"))
 
     if backend == "redis":
         redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
         ttl_days = int(os.getenv("MESSAGE_TTL_DAYS", "30"))
         try:
-            # Test connection synchronously (from_url is lazy, won't fail at construction)
             import redis as sync_redis
             client = sync_redis.from_url(redis_url, protocol=2)
             client.ping()
@@ -166,11 +183,9 @@ def create_memory_manager():
             backend = "sqlite"
 
     if backend == "sqlite":
-        from .sqlite_manager import SQLiteManager
-        db_path = os.getenv("SQLITE_DB_PATH", "agenthub.db")
-        manager = SQLiteManager(db_path=db_path)
-        logger.info(f"SQLiteManager initialized: {db_path}")
-        return manager
+        from .database import sqlite_manager
+        logger.info("Using shared SQLiteManager from database module")
+        return sqlite_manager
 
     return MemoryManager(max_messages=max_messages)
 

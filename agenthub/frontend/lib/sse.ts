@@ -10,6 +10,12 @@ export const SSE_EVENT_ARTIFACT_DIFF = "artifact_diff";
 export const SSE_EVENT_TOOL_START = "tool_start";
 export const SSE_EVENT_TOOL_PROGRESS = "tool_progress";
 export const SSE_EVENT_TOOL_RESULT = "tool_result";
+// A2A 事件类型
+export const SSE_EVENT_A2A_START = "a2a_start";
+export const SSE_EVENT_A2A_PROGRESS = "a2a_progress";
+export const SSE_EVENT_A2A_DONE = "a2a_done";
+export const SSE_EVENT_A2A_CANCELLED = "a2a_cancelled";
+export const SSE_EVENT_A2A_ERROR = "a2a_error";
 
 export type SSEEventType =
   | "message"
@@ -22,7 +28,12 @@ export type SSEEventType =
   | typeof SSE_EVENT_ARTIFACT_DIFF
   | typeof SSE_EVENT_TOOL_START
   | typeof SSE_EVENT_TOOL_PROGRESS
-  | typeof SSE_EVENT_TOOL_RESULT;
+  | typeof SSE_EVENT_TOOL_RESULT
+  | typeof SSE_EVENT_A2A_START
+  | typeof SSE_EVENT_A2A_PROGRESS
+  | typeof SSE_EVENT_A2A_DONE
+  | typeof SSE_EVENT_A2A_CANCELLED
+  | typeof SSE_EVENT_A2A_ERROR;
 
 export interface SSEMessage {
   id?: string;
@@ -38,6 +49,7 @@ export interface SSEMessage {
 
 export interface SSEConnectionOptions {
   baseUrl: string;
+  threadId?: string;
   onMessage: (data: SSEMessage) => void;
   onTermination: (keyword: string) => void;
   onError: (error: string) => void;
@@ -52,6 +64,12 @@ export interface SSEConnectionOptions {
   onToolStart?: (data: import("@/lib/types").ToolStartEvent) => void;
   onToolProgress?: (data: import("@/lib/types").ToolProgressEvent) => void;
   onToolResult?: (data: import("@/lib/types").ToolResultEvent) => void;
+  // A2A 事件回调
+  onA2AStart?: (data: { agent_id: string; depth: number }) => void;
+  onA2AProgress?: (data: { agent_id: string; depth: number }) => void;
+  onA2ADone?: (data: { is_final: boolean }) => void;
+  onA2ACancelled?: (data: { reason: string }) => void;
+  onA2AError?: (data: { error: string }) => void;
 }
 
 export function createSSEConnection(options: SSEConnectionOptions) {
@@ -88,7 +106,10 @@ export function createSSEConnection(options: SSEConnectionOptions) {
   const connect = async () => {
     if (aborted) return;
     try {
-      const eventsUrl = `${options.baseUrl}/api/events`;
+      const params = options.threadId
+        ? `?thread_id=${encodeURIComponent(options.threadId)}`
+        : "";
+      const eventsUrl = `${options.baseUrl}/api/events${params}`;
       console.log("[SSE] Connecting to:", eventsUrl);
       const response = await fetch(eventsUrl, {
         headers: {
@@ -195,6 +216,31 @@ export function createSSEConnection(options: SSEConnectionOptions) {
                 options.onToolResult
               ) {
                 options.onToolResult(parsed);
+              } else if (
+                eventType === SSE_EVENT_A2A_START &&
+                options.onA2AStart
+              ) {
+                options.onA2AStart(parsed);
+              } else if (
+                eventType === SSE_EVENT_A2A_PROGRESS &&
+                options.onA2AProgress
+              ) {
+                options.onA2AProgress(parsed);
+              } else if (
+                eventType === SSE_EVENT_A2A_DONE &&
+                options.onA2ADone
+              ) {
+                options.onA2ADone(parsed);
+              } else if (
+                eventType === SSE_EVENT_A2A_CANCELLED &&
+                options.onA2ACancelled
+              ) {
+                options.onA2ACancelled(parsed);
+              } else if (
+                eventType === SSE_EVENT_A2A_ERROR &&
+                options.onA2AError
+              ) {
+                options.onA2AError(parsed);
               } else {
                 options.onMessage(parsed);
               }

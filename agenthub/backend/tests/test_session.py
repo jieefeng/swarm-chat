@@ -94,7 +94,7 @@ class TestSessionManager:
 
     def test_agent_configs_complete(self):
         """测试所有Agent配置都存在"""
-        expected_agents = ["designer", "developer", "qa", "orchestrator"]
+        expected_agents = ["designer", "developer", "qa"]
         for agent in expected_agents:
             assert agent in AGENT_CONFIGS
             config = AGENT_CONFIGS[agent]
@@ -106,7 +106,7 @@ class TestSessionManager:
     def test_agent_configs_has_three_core_agents(self):
         """验证 3 个核心 Agent ID 存在"""
         core_ids = {"designer", "developer", "qa"}
-        assert core_ids == set(AGENT_CONFIGS.keys()) - {"orchestrator"}
+        assert core_ids == set(AGENT_CONFIGS.keys())
 
     def test_agent_configs_designer_role(self):
         """验证 designer 的角色为创意设计师"""

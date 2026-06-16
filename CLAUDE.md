@@ -83,7 +83,7 @@ SSE 事件类型: `message`、`termination`。
 ## LLM 提供商
 
 通过 `LLM_PROVIDER` 环境变量切换：
-- `bailian`（默认）: 阿里云百炼 API，使用 OpenAI 兼容接口，模型 `qwen3.6-plus-2026-04-02`
+- `bailian`（默认）: 阿里云百炼 API，使用 OpenAI 兼容接口，模型 `qwen3.7-max-preview`
 - `anthropic`: Claude API
 
 选择逻辑在 `llm_router.py:get_llm_service()`。

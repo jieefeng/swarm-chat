@@ -14,10 +14,23 @@ const headers = {
   "X-API-Key": API_KEY,
 };
 
+/** 统一 GET 请求错误处理 */
+async function fetchJSON<T>(url: string): Promise<T> {
+  const res = await fetch(url, { headers });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(
+      errorData.detail || errorData.error || `HTTP ${res.status}`,
+    );
+  }
+  return res.json();
+}
+
 export const api = {
   async sendMessage(
     content: string,
     agentId?: string,
+    threadId?: string,
   ): Promise<SendMessageResponse> {
     const res = await fetch(`${API_BASE}/api/messages`, {
       method: "POST",
@@ -27,6 +40,7 @@ export const api = {
         sender: "user",
         sender_name: "用户",
         agent_id: agentId || undefined,
+        thread_id: threadId || "default",
       }),
     });
     if (!res.ok) {
@@ -37,15 +51,11 @@ export const api = {
   },
 
   async getMessages(limit: number = 50): Promise<{ messages: Message[] }> {
-    const res = await fetch(`${API_BASE}/api/messages?limit=${limit}`, {
-      headers,
-    });
-    return res.json();
+    return fetchJSON(`${API_BASE}/api/messages?limit=${limit}`);
   },
 
   async getAgents(): Promise<{ agents: Agent[] }> {
-    const res = await fetch(`${API_BASE}/api/agents`, { headers });
-    return res.json();
+    return fetchJSON(`${API_BASE}/api/agents`);
   },
 
   async getLLMConfig(): Promise<Record<string, { llm_provider: string }>> {
@@ -99,10 +109,7 @@ export const api = {
   },
 
   async getThreads(limit: number = 50): Promise<{ threads: Thread[] }> {
-    const res = await fetch(`${API_BASE}/api/threads?limit=${limit}`, {
-      headers,
-    });
-    return res.json();
+    return fetchJSON(`${API_BASE}/api/threads?limit=${limit}`);
   },
 
   async createThread(title?: string): Promise<Thread> {
@@ -151,10 +158,8 @@ export const api = {
     threadId: string,
     limit: number = 50,
   ): Promise<{ messages: Message[] }> {
-    const res = await fetch(
+    return fetchJSON(
       `${API_BASE}/api/threads/${threadId}/messages?limit=${limit}`,
-      { headers },
     );
-    return res.json();
   },
 };

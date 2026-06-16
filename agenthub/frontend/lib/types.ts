@@ -18,6 +18,10 @@ export interface MentionCandidate {
   beast?: string;
   element?: string;
   color?: { primary: string; secondary: string };
+  // 命令模式字段
+  icon?: string;
+  description?: string;
+  isCommand?: boolean;
 }
 
 export interface Agent {

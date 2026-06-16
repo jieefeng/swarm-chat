@@ -1,12 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
+import { useCallback, useEffect, useState } from "react";
 import { AgentSelector } from "@/components/agents/AgentSelector";
-import { DefaultAgentModal } from "@/components/agents/DefaultAgentModal";
-import { SetDefaultConfirmToast } from "@/components/agents/SetDefaultConfirmToast";
 import { MessageInput } from "@/components/chat/MessageInput";
 import { MessageList } from "@/components/chat/MessageList";
-import { ModelEditor } from "@/components/chat/ModelEditor";
 import { ThreadList } from "@/components/threads/ThreadList";
 import { api } from "@/lib/api";
 import { useChatStream } from "@/lib/hooks/useChatStream";
@@ -17,6 +15,25 @@ import {
 import { useAgentStore } from "@/lib/stores/agentStore";
 import { useMessageStore } from "@/lib/stores/messageStore";
 import { useThreadStore } from "@/lib/stores/threadStore";
+
+const ModelEditor = dynamic(
+  () => import("@/components/chat/ModelEditor").then((m) => m.ModelEditor),
+  { ssr: false },
+);
+const DefaultAgentModal = dynamic(
+  () =>
+    import("@/components/agents/DefaultAgentModal").then(
+      (m) => m.DefaultAgentModal,
+    ),
+  { ssr: false },
+);
+const SetDefaultConfirmToast = dynamic(
+  () =>
+    import("@/components/agents/SetDefaultConfirmToast").then(
+      (m) => m.SetDefaultConfirmToast,
+    ),
+  { ssr: false },
+);
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:7005";
 
@@ -41,32 +58,40 @@ export default function HomePage() {
     baseUrl: API_BASE,
   });
 
-  const handleThreadSelect = async (threadId: string) => {
-    // 同步检查 localStorage 中是否有默认 Agent
-    const storedDefaultAgent = getStoredDefaultAgentId(threadId);
+  const handleThreadSelect = useCallback(
+    async (threadId: string) => {
+      // 同步检查 localStorage 中是否有默认 Agent
+      const storedDefaultAgent = getStoredDefaultAgentId(threadId);
 
-    if (!storedDefaultAgent) {
-      // 无默认 Agent → 弹窗，用户选择后再切换
-      setPendingThreadId(threadId);
-      setShowAgentModal(true);
-      return;
-    }
+      if (!storedDefaultAgent) {
+        // 无默认 Agent → 弹窗，用户选择后再切换
+        setPendingThreadId(threadId);
+        setShowAgentModal(true);
+        return;
+      }
 
-    // 有默认 Agent → 正常切换
-    useThreadStore.getState().setCurrentThreadId(threadId);
-    setActiveAgentId(storedDefaultAgent);
-    try {
-      const data = await api.getThreadMessages(threadId);
-      useMessageStore.getState().reset();
-      data.messages?.forEach((m) => {
-        useMessageStore.getState().addMessage(m);
-      });
-    } catch (err) {
-      console.error("Failed to load thread messages:", err);
-    }
-  };
+      // 有默认 Agent → 正常切换
+      useThreadStore.getState().setCurrentThreadId(threadId);
+      setActiveAgentId(storedDefaultAgent);
+      try {
+        const data = await api.getThreadMessages(threadId);
+        useMessageStore.getState().reset();
+        data.messages?.forEach((m) => {
+          // 确保 type 字段正确设置：role 为 "user" 时 type 设为 "user"，否则为 "agent"
+          const normalizedMessage = {
+            ...m,
+            type: m.type || (m.role === "user" ? "user" : "agent"),
+          };
+          useMessageStore.getState().addMessage(normalizedMessage);
+        });
+      } catch (err) {
+        console.error("Failed to load thread messages:", err);
+      }
+    },
+    [setActiveAgentId],
+  );
 
-  const handleThreadCreate = async () => {
+  const handleThreadCreate = useCallback(async () => {
     try {
       const newThread = await api.createThread();
       useThreadStore.getState().addThread(newThread);
@@ -76,7 +101,7 @@ export default function HomePage() {
     } catch (err) {
       console.error("Failed to create thread:", err);
     }
-  };
+  }, []);
 
   const handleAgentSelect = (agentId: string) => {
     setDefaultAgentId(agentId);
@@ -98,37 +123,80 @@ export default function HomePage() {
     }
   };
 
-  const handleSendMessage = (content: string) => {
-    const mentionMatch = content.match(/@(\w+)/);
-    if (mentionMatch?.[1]) {
-      setActiveAgentId(mentionMatch[1]);
-      sendMessage(content);
-    } else {
-      // 使用默认 Agent
-      const agentId =
-        defaultAgentId || (agents.length > 0 ? agents[0]?.id : undefined);
-      sendMessage(content, agentId);
-    }
-  };
+  const handleSendMessage = useCallback(
+    (content: string) => {
+      const mentionMatch = content.match(/@(\w+)/);
+      if (mentionMatch?.[1]) {
+        setActiveAgentId(mentionMatch[1]);
+        sendMessage(content);
+      } else {
+        // 使用默认 Agent
+        const agentId =
+          defaultAgentId || (agents.length > 0 ? agents[0]?.id : undefined);
+        sendMessage(content, agentId);
+      }
+    },
+    [activeAgentId, defaultAgentId, agents, sendMessage],
+  );
 
   useEffect(() => {
-    const loadData = async () => {
+    const loadAgents = async () => {
       try {
-        const [msgsRes, agentsRes] = await Promise.all([
-          api.getMessages(),
-          api.getAgents(),
-        ]);
-        useMessageStore.getState().reset();
-        msgsRes.messages?.forEach((m) => {
-          useMessageStore.getState().addMessage(m);
-        });
+        const agentsRes = await api.getAgents();
         setAgents(agentsRes.agents || []);
       } catch (err) {
-        console.error("Failed to load data:", err);
+        console.error("Failed to load agents:", err);
       }
     };
-    loadData();
+    loadAgents();
   }, [setAgents]);
+
+  // 页面加载时恢复 thread 并加载消息历史
+  useEffect(() => {
+    const loadThreadsAndMessages = async () => {
+      try {
+        // 加载 threads 列表
+        const threadsData = await api.getThreads();
+        const threads = threadsData.threads || [];
+        useThreadStore.getState().setThreads(threads);
+
+        // 如果有存储的 thread ID，验证它是否仍然有效并加载消息
+        const storedThreadId = currentThreadId;
+        if (storedThreadId && threads.some((t) => t.id === storedThreadId)) {
+          // 存储的 thread 有效，加载其消息
+          const msgData = await api.getThreadMessages(storedThreadId);
+          useMessageStore.getState().reset();
+          msgData.messages?.forEach((m) => {
+            // 确保 type 字段正确设置
+            const normalizedMessage = {
+              ...m,
+              type: m.type || (m.role === "user" ? "user" : "agent"),
+            };
+            useMessageStore.getState().addMessage(normalizedMessage);
+          });
+        } else if (threads.length > 0) {
+          // 无存储 thread 或已失效，选择第一个 thread
+          const firstThread = threads[0];
+          if (firstThread) {
+            useThreadStore.getState().setCurrentThreadId(firstThread.id);
+            const msgData = await api.getThreadMessages(firstThread.id);
+            useMessageStore.getState().reset();
+            msgData.messages?.forEach((m) => {
+              // 确保 type 字段正确设置
+              const normalizedMessage = {
+                ...m,
+                type: m.type || (m.role === "user" ? "user" : "agent"),
+              };
+              useMessageStore.getState().addMessage(normalizedMessage);
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load threads and messages:", err);
+      }
+    };
+    loadThreadsAndMessages();
+  }, []); // 只在组件挂载时执行一次
 
   // 切换 thread 时清掉"设为默认"待处理状态，避免跨 thread 误操作
   useEffect(() => {

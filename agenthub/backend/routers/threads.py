@@ -1,26 +1,15 @@
 """会话 (Thread) 路由 - 提供会话管理 API"""
-import os
+import logging
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from agenthub.backend.services.sqlite_manager import SQLiteManager
+from agenthub.backend.services.database import get_db
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["threads"])
-
-# SQLite 存储实例
-_db_path = os.getenv("SQLITE_DB_PATH", "agenthub.db")
-sqlite_manager = SQLiteManager(db_path=_db_path)
-_db_initialized = False
-
-
-async def _get_db() -> SQLiteManager:
-    """确保数据库已初始化"""
-    global _db_initialized
-    if not _db_initialized:
-        await sqlite_manager.init_db()
-        _db_initialized = True
-    return sqlite_manager
 
 
 class CreateThreadRequest(BaseModel):
@@ -35,15 +24,13 @@ class UpdateThreadRequest(BaseModel):
 
 @router.get("/threads")
 async def get_threads(user_id: str = Query("default"), limit: int = Query(50, ge=1, le=200)):
-    """获取会话列表"""
-    db = await _get_db()
-    threads = await db.get_threads(user_id=user_id, limit=limit)
+    """获取会话列表（使用 JOIN 查询避免 N+1 问题）"""
+    db = await get_db()
+    threads = await db.get_threads_with_message_count(user_id=user_id, limit=limit)
 
-    # 为每个会话添加 message_count
+    # 转换布尔字段
     result = []
     for thread in threads:
-        count = await db.get_message_count(thread["id"])
-        thread["message_count"] = count
         thread["is_pinned"] = bool(thread.get("is_pinned", 0))
         thread["is_archived"] = bool(thread.get("is_archived", 0))
         result.append(thread)
@@ -54,21 +41,25 @@ async def get_threads(user_id: str = Query("default"), limit: int = Query(50, ge
 @router.post("/threads", status_code=201)
 async def create_thread(req: CreateThreadRequest, user_id: str = Query("default")):
     """创建新会话"""
-    db = await _get_db()
-    title = req.title or "新会话"
-    thread_id = await db.create_thread(title=title, user_id=user_id)
+    try:
+        db = await get_db()
+        title = req.title or "新会话"
+        thread_id = await db.create_thread(title=title, user_id=user_id)
 
-    # 返回创建的会话
-    thread = await db.get_thread(thread_id)
-    thread["is_pinned"] = bool(thread.get("is_pinned", 0))
-    thread["is_archived"] = bool(thread.get("is_archived", 0))
-    return thread
+        # 返回创建的会话
+        thread = await db.get_thread(thread_id)
+        thread["is_pinned"] = bool(thread.get("is_pinned", 0))
+        thread["is_archived"] = bool(thread.get("is_archived", 0))
+        return thread
+    except Exception as e:
+        logger.exception("Failed to create thread")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.patch("/threads/{thread_id}")
 async def update_thread(thread_id: str, req: UpdateThreadRequest):
     """更新会话（标题、置顶、归档）"""
-    db = await _get_db()
+    db = await get_db()
 
     # 检查会话是否存在
     existing = await db.get_thread(thread_id)
@@ -97,7 +88,7 @@ async def update_thread(thread_id: str, req: UpdateThreadRequest):
 @router.delete("/threads/{thread_id}")
 async def delete_thread(thread_id: str):
     """删除会话（级联删除消息）"""
-    db = await _get_db()
+    db = await get_db()
 
     deleted = await db.delete_thread(thread_id)
     if not deleted:
@@ -109,7 +100,7 @@ async def delete_thread(thread_id: str):
 @router.delete("/threads")
 async def delete_all_threads(keep: str = Query(..., description="要保留的会话 ID")):
     """清理除指定会话外的所有会话（包括置顶的）"""
-    db = await _get_db()
+    db = await get_db()
 
     # 验证 keep 指向的会话存在
     existing = await db.get_thread(keep)
@@ -126,7 +117,7 @@ async def get_thread_messages(
     limit: int = Query(50, ge=1, le=200),
 ):
     """获取会话内的消息"""
-    db = await _get_db()
+    db = await get_db()
 
     # 检查会话是否存在
     existing = await db.get_thread(thread_id)

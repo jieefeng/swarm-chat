@@ -1,6 +1,7 @@
 """阿里云百炼 API 服务封装 - 兼容 OpenAI 接口"""
 import os
-import asyncio
+import time
+import threading
 from collections.abc import Generator
 from typing import Optional
 from openai import OpenAI
@@ -9,7 +10,7 @@ from openai import OpenAI
 class BailianService:
     """百炼 API 服务封装 - 带重试和超时"""
 
-    DEFAULT_MODEL = "qwen3.5-plus-2026-04-20"
+    DEFAULT_MODEL = "qwen3.7-max-preview"
 
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
         self.api_key = api_key or os.getenv("DASHSCOPE_API_KEY", "")
@@ -116,12 +117,24 @@ class BailianService:
         system_prompt: str = "",
         tools: list[dict] | None = None,
         tool_choice: str | None = None,
+        stream_timeout: int = 180,
     ) -> Generator:
         """流式发送消息到百炼 API
+
+        Args:
+            session_id: 会话ID
+            message: 用户消息
+            system_prompt: 系统提示
+            tools: 工具定义列表
+            tool_choice: 工具选择策略
+            stream_timeout: 流式调用总超时（秒），默认 180 秒
 
         Yields:
             当无 tools 时: str（文本片段）
             当有 tools 时: ChatCompletionChunk 对象（需检查 .delta.tool_calls）
+
+        Raises:
+            TimeoutError: 超过 stream_timeout 时抛出
         """
         kwargs = {
             "model": self.model,
@@ -139,7 +152,16 @@ class BailianService:
             kwargs["tool_choice"] = tool_choice
 
         stream = self.client.chat.completions.create(**kwargs)
+        start_time = time.monotonic()
+
         for chunk in stream:
+            # 检查总超时
+            elapsed = time.monotonic() - start_time
+            if elapsed > stream_timeout:
+                raise TimeoutError(
+                    f"百炼流式调用超时: 已运行 {elapsed:.1f}s，超过限制 {stream_timeout}s"
+                )
+
             if not chunk.choices:
                 continue
             delta = chunk.choices[0].delta

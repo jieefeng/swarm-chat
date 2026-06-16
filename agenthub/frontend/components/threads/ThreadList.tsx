@@ -37,6 +37,9 @@ export function ThreadList({
 
   useEffect(() => {
     const loadThreads = async () => {
+      // 如果 store 中已有 threads，跳过加载（由父组件负责初始化）
+      if (threads.length > 0) return;
+
       setLoading(true);
       try {
         const data = await api.getThreads();

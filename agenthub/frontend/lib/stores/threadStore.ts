@@ -1,6 +1,30 @@
 import { create } from "zustand";
 import type { Thread } from "@/lib/types";
 
+const THREAD_STORAGE_KEY = "agenthub_current_thread_id";
+
+/** 从 localStorage 读取上次选中的 thread ID */
+function getStoredThreadId(): string | null {
+  try {
+    return localStorage.getItem(THREAD_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/** 将 thread ID 持久化到 localStorage */
+function storeThreadId(id: string | null): void {
+  try {
+    if (id) {
+      localStorage.setItem(THREAD_STORAGE_KEY, id);
+    } else {
+      localStorage.removeItem(THREAD_STORAGE_KEY);
+    }
+  } catch {
+    // localStorage 不可用时静默失败
+  }
+}
+
 interface ThreadState {
   threads: Thread[];
   currentThreadId: string | null;
@@ -15,7 +39,7 @@ interface ThreadState {
 
 export const useThreadStore = create<ThreadState>((set) => ({
   threads: [],
-  currentThreadId: null,
+  currentThreadId: getStoredThreadId(), // 从 localStorage 恢复
   isLoading: false,
   setThreads: (threads) => set({ threads }),
   addThread: (thread) => set((s) => ({ threads: [thread, ...s.threads] })),
@@ -24,10 +48,17 @@ export const useThreadStore = create<ThreadState>((set) => ({
       threads: s.threads.map((t) => (t.id === id ? { ...t, ...updates } : t)),
     })),
   removeThread: (id) =>
-    set((s) => ({
-      threads: s.threads.filter((t) => t.id !== id),
-      currentThreadId: s.currentThreadId === id ? null : s.currentThreadId,
-    })),
-  setCurrentThreadId: (id) => set({ currentThreadId: id }),
+    set((s) => {
+      const nextId = s.currentThreadId === id ? null : s.currentThreadId;
+      storeThreadId(nextId); // 同步更新 localStorage
+      return {
+        threads: s.threads.filter((t) => t.id !== id),
+        currentThreadId: nextId,
+      };
+    }),
+  setCurrentThreadId: (id) => {
+    storeThreadId(id); // 同步更新 localStorage
+    set({ currentThreadId: id });
+  },
   setLoading: (v) => set({ isLoading: v }),
 }));

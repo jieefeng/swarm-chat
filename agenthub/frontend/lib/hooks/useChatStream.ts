@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { createSSEConnection } from "@/lib/sse";
+import { buildClarificationMessage } from "@/lib/sseMessageBuilder";
 import { useMessageStore } from "@/lib/stores/messageStore";
 import { useTaskStore } from "@/lib/stores/taskStore";
+import { useThreadStore } from "@/lib/stores/threadStore";
 import type {
   ClarificationRequestEvent,
   Message,
@@ -48,8 +50,10 @@ export function useChatStream(
   const setStreaming = useMessageStore((s) => s.setStreaming);
   const addToolExecution = useMessageStore((s) => s.addToolExecution);
   const updateToolExecution = useMessageStore((s) => s.updateToolExecution);
+  const setA2AState = useMessageStore((s) => s.setA2AState);
   const addTask = useTaskStore((s) => s.addTask);
   const updateTaskStatus = useTaskStore((s) => s.updateTaskStatus);
+  const currentThreadId = useThreadStore((s) => s.currentThreadId);
 
   const disconnect = useCallback(() => {
     if (connectionRef.current) {
@@ -102,6 +106,7 @@ export function useChatStream(
 
       const conn = createSSEConnection({
         baseUrl,
+        threadId: currentThreadId || undefined,
         onMessage: (data) => {
           console.log(
             "[DEBUG] SSE onMessage called! data keys:",
@@ -184,18 +189,7 @@ export function useChatStream(
           updateTaskStatus(data.task_id, data.status);
         },
         onClarification: (data: ClarificationRequestEvent) => {
-          console.log("[DEBUG] SSE onClarification:", data.question);
-          addMessage({
-            id: data.message_id || `clarif-${Date.now()}`,
-            sender: "system",
-            sender_name: "clarification",
-            content: JSON.stringify({
-              question: data.question,
-              options: data.options,
-            }),
-            timestamp: Math.floor(Date.now() / 1000),
-            type: "agent",
-          });
+          addMessage(buildClarificationMessage(data));
         },
         onToolStart: (data) => {
           console.log("[DEBUG] SSE onToolStart:", data.command);
@@ -235,6 +229,52 @@ export function useChatStream(
             });
           }
         },
+        // A2A 事件处理
+        onA2AStart: (data) => {
+          console.log("[DEBUG] SSE onA2AStart:", data.agent_id, data.depth);
+          setA2AState({
+            isRunning: true,
+            currentAgent: data.agent_id,
+            depth: data.depth,
+            canCancel: true,
+          });
+        },
+        onA2AProgress: (data) => {
+          console.log("[DEBUG] SSE onA2AProgress:", data.agent_id, data.depth);
+          setA2AState({
+            currentAgent: data.agent_id,
+            depth: data.depth,
+          });
+        },
+        onA2ADone: (data) => {
+          console.log("[DEBUG] SSE onA2ADone:", data.is_final);
+          if (data.is_final) {
+            setA2AState({
+              isRunning: false,
+              currentAgent: "",
+              depth: 0,
+              canCancel: false,
+            });
+          }
+        },
+        onA2ACancelled: (data) => {
+          console.log("[DEBUG] SSE onA2ACancelled:", data.reason);
+          setA2AState({
+            isRunning: false,
+            currentAgent: "",
+            depth: 0,
+            canCancel: false,
+          });
+        },
+        onA2AError: (data) => {
+          console.log("[DEBUG] SSE onA2AError:", data.error);
+          setA2AState({
+            isRunning: false,
+            currentAgent: "",
+            depth: 0,
+            canCancel: false,
+          });
+        },
       });
 
       connectionRef.current = conn;
@@ -243,7 +283,7 @@ export function useChatStream(
         // 等待 SSE 连接建立后再发 POST，避免事件在连接建立前被发送而丢失
         console.log("[DEBUG] Waiting for SSE connection to be ready...");
         const readyTimeout = new Promise<boolean>((r) =>
-          setTimeout(() => r(false), 5000),
+          setTimeout(() => r(false), 15000),
         );
         const isReady = await Promise.race([
           conn.ready.then(() => true),
@@ -257,7 +297,11 @@ export function useChatStream(
             content,
           );
         }
-        const result = await api.sendMessage(content, agentId);
+        const result = await api.sendMessage(
+          content,
+          agentId,
+          currentThreadId || undefined,
+        );
         console.log("[DEBUG] API sendMessage result:", JSON.stringify(result));
         if (!result.success) {
           throw new Error("发送消息失败");
@@ -273,6 +317,7 @@ export function useChatStream(
     [
       agentId,
       baseUrl,
+      currentThreadId,
       addMessage,
       upsertMessage,
       appendStreamChunk,

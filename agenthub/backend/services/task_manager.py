@@ -2,7 +2,7 @@
 import asyncio
 from collections import defaultdict, deque
 
-from agenthub.backend.models.task import Task, TaskCreate, TaskStatus, OrchestratorOutput
+from agenthub.backend.models.task import Task, TaskCreate, TaskStatus
 from agenthub.backend.services.agent_adapter import get_agent_adapter, IAgentAdapter
 from agenthub.backend.services.sse_manager import sse_manager
 
@@ -33,27 +33,6 @@ class TaskManager:
 
     def get_task(self, task_id: str) -> Task | None:
         return self._tasks.get(task_id)
-
-    def add_tasks_from_orchestrator(self, output: OrchestratorOutput) -> list[Task]:
-        """从 Orchestrator 输出创建任务，解析 depends_on 为 UUID"""
-        tasks = []
-        for tc in output.tasks:
-            task = Task(
-                title=tc.title,
-                description=tc.description,
-                assigned_to=tc.assigned_to,
-                depends_on=[],
-                priority=tc.priority,
-            )
-            self._tasks[task.id] = task
-            self._title_to_id[tc.title] = task.id
-            tasks.append(task)
-        for tc, task in zip(output.tasks, tasks):
-            for dep_title in tc.depends_on:
-                dep_id = self._title_to_id.get(dep_title)
-                if dep_id:
-                    task.depends_on.append(dep_id)
-        return tasks
 
     def get_ready_tasks(self) -> list[Task]:
         """获取可执行的任务（所有依赖已完成）"""

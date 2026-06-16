@@ -18,7 +18,7 @@ class TaskStatus(str, Enum):
 class TaskCreate(BaseModel):
     title: str
     description: str
-    assigned_to: str  # agent id: pm/architect/developer/qa
+    assigned_to: str  # agent id: designer/developer/qa
     depends_on: list[str] = Field(default_factory=list)
     priority: str = "medium"
 
@@ -49,14 +49,3 @@ class Task(BaseModel):
         return new_status in transitions.get(self.status, set())
 
 
-class UncertainPoint(BaseModel):
-    question: str
-    options: list[str]
-
-
-class OrchestratorOutput(BaseModel):
-    analysis: str
-    tasks: list[TaskCreate]
-    requires_clarification: bool = False
-    clarification_question: str | None = None
-    uncertain_points: list[UncertainPoint] = Field(default_factory=list)
