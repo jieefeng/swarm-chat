@@ -252,13 +252,6 @@ class A2ARouter:
         from .session import session_manager, AGENT_CONFIGS
         from .llm_router import get_llm_service_for_provider
         from .memory_manager import memory_manager, redis_memory_manager
-        import os
-
-        # 通过模块对象访问（方便测试 mock 覆盖）
-        import sys as _sys
-        _mod = _sys.modules[__name__]
-        invocation_registry = getattr(_mod, "invocation_registry", None) or _invocation_registry
-        prompt_injector = getattr(_mod, "prompt_injector", None) or _prompt_injector
 
         # 根据 STORAGE_BACKEND 选择存储实例
         # redis_memory_manager 在默认 sqlite 模式下实际就是 sqlite_manager 单例
