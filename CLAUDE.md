@@ -106,6 +106,16 @@ Zustand store 更新后组件自动响应，无需手动订阅。
 - `memory_manager` 是内存存储，重启后消息丢失
 - `main.py` 中 `PORT` 的代码默认值是 `7000`，但 `next.config.mjs` 代理目标是 `7010`——必须在 `backend/.env` 中设置 `PORT=7010`，否则前端请求全部 502
 
+## A2A 隐性知识
+
+- **A2A 状态内存存储**：`a2a_router.thread_worklists` / `thread_signals` / `thread_states` 是内存 Dict，服务器重启 in-flight 链丢失（按 YAGNI 决定不持久化）
+- **A2A prompt 注入位置**：`a2a_router._invoke_agent` 在调 LLM **前**做两件事 — `invocation_registry.create(agent_id, thread_id)` 创建凭证 + `prompt_injector.inject_into_system_prompt()` 注入 callback 指令。**不要**把 prompt 注入移到 LLM 调用之后（已注入的 system_prompt 才是 LLM 看到的）
+- **A2A 入口**：`POST /api/messages` 走 `a2a_router.route_execution`（有 @agent 提及或前端指定 agent_id），无目标时降级到 `asyncio.gather` 广播
+- **A2A 取消**：`POST /api/a2a/cancel?thread_id=xxx` 调 `a2a_router.cancel_thread(thread_id)`，设置 `asyncio.Event` 让正在执行的 `_invoke_agent` 在下一个 yield 点检查并停止
+- **A2A SSE 事件类型**：`a2a_start` / `a2a_chunk` / `a2a_done` / `a2a_complete`（整链 is_final）/ `a2a_cancelled` / `a2a_error` / `message`（callback 发出）。前端 `messageStore` 监听这些事件来更新 `a2aState`
+- **A2A invocation 生命周期**：每 agent 一次（不是 worklist 全局一次），TTL 1h。简化每个 agent 都有合法凭证的逻辑
+- **A2A 3-agent 适配**：`prompt_injector._build_workflow_triggers` 已按 designer/developer/qa 重写，触发点 prompt 注入中。`/help` 文档里五行神兽表的 PM/架构师/开发者/测试/协调器段落是历史遗留，**未更新**
+
 ## 环境变量
 
 ```bash
