@@ -264,14 +264,19 @@ class TestInvokeAgentNewBehavior:
                 async for chunk in self.router._invoke_agent("designer", "hi", "t1", "u1"):
                     chunks.append(chunk)
 
-                # 断言：inject_into_system_prompt 应被调用
+                # 断言：inject_into_system_prompt 应被调用，且参数正确
                 mock_injector.inject_into_system_prompt.assert_called_once()
+                call_args = mock_injector.inject_into_system_prompt.call_args
+                assert len(call_args.args) == 4 or len(call_args.kwargs) >= 3, (
+                    f"inject_into_system_prompt expected 4 positional args "
+                    f"(system_prompt, invocation_id, callback_token, agent_id), got: {call_args}"
+                )
 
-                # 断言：LLM 收到的 system_prompt 应包含注入内容
-                call_kwargs = mock_llm.send_message_stream.call_args
-                actual_prompt = call_kwargs.kwargs.get("system_prompt") or call_kwargs[1].get("system_prompt", "")
-                assert "callback" in actual_prompt.lower() or injected_prompt == actual_prompt, (
-                    f"Expected injected prompt, got: {actual_prompt}"
+                # 断言：LLM 收到的 system_prompt 应为 injector 返回值
+                llm_call = mock_llm.send_message_stream.call_args
+                actual_prompt = llm_call.kwargs.get("system_prompt") or llm_call[1].get("system_prompt", "")
+                assert actual_prompt == injected_prompt, (
+                    f"LLM should receive injected prompt, got: {actual_prompt}"
                 )
             finally:
                 if original_registry is not None:
