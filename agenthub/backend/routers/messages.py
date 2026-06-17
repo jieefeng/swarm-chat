@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from agenthub.backend.services.session import AGENT_CONFIGS, session_manager
 from agenthub.backend.services.agent_identity import get_identity, get_bond_context
 from agenthub.backend.services.claude_code_service import claude_code_service
+from agenthub.backend.services.a2a_router import a2a_router
 import os
 from agenthub.backend.services.memory_manager import (
     memory_manager,
@@ -577,11 +578,87 @@ async def send_message(req: SendMessageRequest):
                 await sse_manager.broadcast("message", error_msg, thread_id=req.thread_id)
                 return error_msg
 
-    # 使用asyncio.gather并行处理所有Agent
-    await asyncio.gather(*[send_to_single_agent(agent_id) for agent_id in targets])
+    # 走 a2a_router 路径 vs 降级路径
+    if targets:
+        # 走 a2a_router.route_execution — 端到端 A2A 链
+        message_id = f"msg_{uuid.uuid4().hex[:8]}"
+        seq = 0
+
+        async def on_agent_chunk(agent_id: str, chunk: str, thread_id: str):
+            nonlocal seq
+            await sse_manager.broadcast_stream_chunk(
+                message_id, chunk, seq, thread_id=thread_id
+            )
+            seq += 1
+
+        async def on_agent_done(agent_id: str, full_response: str, thread_id: str):
+            config = AGENT_CONFIGS.get(agent_id, {})
+            agent_msg = await _persist_message(
+                role=agent_id,
+                content=full_response,
+                agent_id=agent_id,
+                sender_name=config.get("name", agent_id),
+                user_id=req.user_id,
+                thread_id=thread_id,
+            )
+            agent_msg["id"] = message_id
+            await sse_manager.broadcast("message", agent_msg, thread_id=thread_id)
+
+        async def on_agent_start(agent_id: str, depth: int, thread_id: str):
+            await sse_manager.broadcast(
+                "a2a_start",
+                {"agent_id": agent_id, "depth": depth},
+                thread_id=thread_id,
+            )
+
+        async def on_a2a_complete(thread_id: str):
+            await sse_manager.broadcast(
+                "a2a_complete",
+                {"is_final": True},
+                thread_id=thread_id,
+            )
+
+        async def on_a2a_cancelled(thread_id: str, reason: str):
+            await sse_manager.broadcast(
+                "a2a_cancelled",
+                {"reason": reason},
+                thread_id=thread_id,
+            )
+
+        # 消费 a2a_router.route_execution 的事件流
+        async for _ in a2a_router.route_execution(
+            initial_agents=targets,
+            message=route_result["content"],
+            thread_id=req.thread_id,
+            user_id=req.user_id,
+            on_agent_start=on_agent_start,
+            on_agent_chunk=on_agent_chunk,
+            on_agent_done=on_agent_done,
+            on_a2a_complete=on_a2a_complete,
+            on_a2a_cancelled=on_a2a_cancelled,
+        ):
+            pass
+
+        return {
+            "success": True,
+            "message_id": message_id,
+            "is_a2a": True,
+        }
+    else:
+        # 降级路径：原 broadcast 行为
+        await asyncio.gather(
+            *[send_to_single_agent(agent_id) for agent_id in targets]
+        )
 
     return {
         "success": True,
         "message_id": user_msg.get("id", ""),
         "is_broadcast": route_result["is_broadcast"]
     }
+
+
+@router.post("/a2a/cancel")
+async def cancel_a2a(thread_id: str = Query(...)):
+    """取消指定线程的 A2A 链（前端 Stop 按钮调）"""
+    a2a_router.cancel_thread(thread_id)
+    return {"status": "ok", "thread_id": thread_id}
