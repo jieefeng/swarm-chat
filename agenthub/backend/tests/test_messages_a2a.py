@@ -174,3 +174,43 @@ class TestSendMessageWithA2ARouter:
         assert "on_agent_done" in captured_callbacks
         assert "on_a2a_complete" in captured_callbacks
         assert "on_a2a_cancelled" in captured_callbacks
+
+    def test_send_message_handles_a2a_execution_error(self, client):
+        """route_execution 抛异常时返回错误消息而非 500"""
+        test_client, mock_a2a, mock_memory, mock_sse, mock_msg_router, mock_db = client
+
+        async def failing_route_execution(**kwargs):
+            raise RuntimeError("A2A network failure")
+            yield  # noqa: unreachable — needed to make this an async generator
+
+        mock_a2a.route_execution = MagicMock(
+            side_effect=lambda **kwargs: failing_route_execution(**kwargs)
+        )
+
+        resp = test_client.post(
+            "/api/messages",
+            json={
+                "content": "分析需求",
+                "sender": "user",
+                "sender_name": "User",
+                "agent_id": "designer",
+                "user_id": "u1",
+                "thread_id": "t1",
+            },
+        )
+        # 应返回 200（不是 500），错误通过 SSE 广播
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["success"] is True
+        assert data["is_a2a"] is True
+
+        # 验证 error 消息被持久化和广播
+        broadcast_calls = mock_sse.broadcast.call_args_list
+        error_events = [c for c in broadcast_calls if c.args[0] == "a2a_error"]
+        assert len(error_events) == 1
+        assert "A2A network failure" in str(error_events[0])
+
+        # 验证系统错误消息被持久化
+        persist_calls = mock_memory.add_message.call_args_list
+        error_persists = [c for c in persist_calls if "A2A 执行出错" in str(c)]
+        assert len(error_persists) == 1

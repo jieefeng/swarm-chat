@@ -593,6 +593,7 @@ async def send_message(req: SendMessageRequest):
 
         async def on_agent_done(agent_id: str, full_response: str, thread_id: str):
             config = AGENT_CONFIGS.get(agent_id, {})
+            agent_msg_id = f"msg_{uuid.uuid4().hex[:8]}"
             agent_msg = await _persist_message(
                 role=agent_id,
                 content=full_response,
@@ -601,7 +602,7 @@ async def send_message(req: SendMessageRequest):
                 user_id=req.user_id,
                 thread_id=thread_id,
             )
-            agent_msg["id"] = message_id
+            agent_msg["id"] = agent_msg_id
             await sse_manager.broadcast("message", agent_msg, thread_id=thread_id)
 
         async def on_agent_start(agent_id: str, depth: int, thread_id: str):
@@ -626,29 +627,39 @@ async def send_message(req: SendMessageRequest):
             )
 
         # 消费 a2a_router.route_execution 的事件流
-        async for _ in a2a_router.route_execution(
-            initial_agents=targets,
-            message=route_result["content"],
-            thread_id=req.thread_id,
-            user_id=req.user_id,
-            on_agent_start=on_agent_start,
-            on_agent_chunk=on_agent_chunk,
-            on_agent_done=on_agent_done,
-            on_a2a_complete=on_a2a_complete,
-            on_a2a_cancelled=on_a2a_cancelled,
-        ):
-            pass
+        try:
+            async for _ in a2a_router.route_execution(
+                initial_agents=targets,
+                message=route_result["content"],
+                thread_id=req.thread_id,
+                user_id=req.user_id,
+                on_agent_start=on_agent_start,
+                on_agent_chunk=on_agent_chunk,
+                on_agent_done=on_agent_done,
+                on_a2a_complete=on_a2a_complete,
+                on_a2a_cancelled=on_a2a_cancelled,
+            ):
+                pass
+        except Exception as e:
+            logger.error(f"A2A route_execution error: {e}")
+            error_msg = await _persist_message(
+                role="system",
+                content=f"A2A 执行出错: {str(e)}",
+                agent_id="system",
+                sender_name="系统",
+                user_id=req.user_id,
+                thread_id=req.thread_id,
+            )
+            await sse_manager.broadcast("message", error_msg, thread_id=req.thread_id)
+            await sse_manager.broadcast(
+                "a2a_error", {"error": str(e)}, thread_id=req.thread_id
+            )
 
         return {
             "success": True,
             "message_id": message_id,
             "is_a2a": True,
         }
-    else:
-        # 降级路径：原 broadcast 行为
-        await asyncio.gather(
-            *[send_to_single_agent(agent_id) for agent_id in targets]
-        )
 
     return {
         "success": True,
