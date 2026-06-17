@@ -31,13 +31,6 @@ def registry():
 
 
 @pytest.fixture
-def valid_creds(registry):
-    """生成一组有效凭证"""
-    inv_id, token = registry.create(agent_id="designer", thread_id="thread-1")
-    return inv_id, token
-
-
-@pytest.fixture
 def client(registry):
     """注入独立 registry 并返回 TestClient"""
     app = FastAPI()
@@ -52,11 +45,6 @@ def client(registry):
         # 而 callback_router 自己调用 registry.verify）
         # 但这里我们 mock 了整个 callback_router，所以 verify 逻辑在 mock 里
         yield TestClient(app), mock_router, registry
-
-
-def _make_creds(registry: InvocationRegistry):
-    """创建并返回 (invocation_id, callback_token)"""
-    return registry.create(agent_id="designer", thread_id="thread-1")
 
 
 class TestPostMessageAPI:
