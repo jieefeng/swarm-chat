@@ -285,7 +285,7 @@ export default function HomePage() {
         />
 
         {/* 聊天区域 */}
-        <div className="flex-1 flex flex-col bg-paper relative">
+        <div className="flex-1 flex flex-col min-h-0 bg-paper relative">
           {/* 微妙的光晕背景 */}
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-gold/[0.04] rounded-full blur-[100px]" />
@@ -300,7 +300,7 @@ export default function HomePage() {
               onSetDefault={setPendingDefaultAgentId}
             />
           </div>
-          <div className="relative flex-1 flex flex-col">
+          <div className="relative flex-1 flex flex-col min-h-0">
             <MessageList messages={messages} agentId={null} />
             <MessageInput
               onSubmit={handleSendMessage}

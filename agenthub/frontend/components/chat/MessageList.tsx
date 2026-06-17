@@ -32,7 +32,7 @@ export function MessageList({ messages, scrollRef }: MessageListProps) {
   }
 
   return (
-    <div ref={ref} className="flex-1 overflow-y-auto p-5">
+    <div ref={ref} className="flex-1 min-h-0 overflow-y-auto p-5">
       {messages.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-full text-center">
           <div className="text-4xl mb-4 opacity-30">🐉</div>
