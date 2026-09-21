@@ -35,9 +35,11 @@ export function ToolExecutionCard({ tool }: ToolExecutionCardProps) {
     <div
       className={`rounded-lg border p-3 my-2 ${statusConfig.border} ${statusConfig.bg}`}
     >
-      <div
-        className="flex items-center gap-2 cursor-pointer select-none"
+      <button
+        type="button"
+        className="flex w-full items-center gap-2 cursor-pointer select-none text-left"
         onClick={() => setExpanded(!expanded)}
+        aria-expanded={expanded}
       >
         <span className="text-sm">🔧</span>
         <span className="text-xs font-body font-medium text-ink/70 flex-1">
@@ -53,7 +55,7 @@ export function ToolExecutionCard({ tool }: ToolExecutionCardProps) {
             {expanded ? "▲" : "▼"}
           </span>
         )}
-      </div>
+      </button>
       {expanded && tool.output && (
         <pre className="mt-2 p-2.5 bg-paper-dark/80 rounded-lg text-[11px] text-ink/60 overflow-x-auto max-h-60 overflow-y-auto whitespace-pre-wrap font-mono border border-ink/[0.06]">
           {tool.output}

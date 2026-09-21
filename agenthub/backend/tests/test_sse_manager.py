@@ -67,7 +67,7 @@ class TestSSEEventManager:
 
         # 验证：至少有一个消息被接收（广播成功）
         # 由于异步时序，验证管理器有订阅者
-        assert sse_manager.get_subscriber_count() >= 0
+        assert await sse_manager.get_subscriber_count() >= 0
 
     # UT-E003: 推送终止信号 -> 所有队列收到termination事件
     @pytest.mark.asyncio
@@ -118,7 +118,7 @@ class TestSSEEventManager:
                 pass
 
         # 验证订阅者数量增加（只有在迭代后才会计数）
-        count = sse_manager.get_subscriber_count()
+        count = await sse_manager.get_subscriber_count()
         assert count >= 3 or count == 0  # 取决于订阅是否已激活
 
     # UT-E005: 并发推送 -> 无数据丢失
@@ -153,11 +153,12 @@ class TestSSEEventManager:
 
         # 验证：消息数量应该等于广播数量乘以接收者数量
         # 由于异步特性，我们主要验证没有崩溃或异常
-        assert sse_manager.get_subscriber_count() >= 0
+        assert await sse_manager.get_subscriber_count() >= 0
 
-    def test_initial_subscriber_count(self, sse_manager):
+    @pytest.mark.asyncio
+    async def test_initial_subscriber_count(self, sse_manager):
         """测试初始订阅者数量为0"""
-        assert sse_manager.get_subscriber_count() == 0
+        assert await sse_manager.get_subscriber_count() == 0
 
     @pytest.mark.asyncio
     async def test_subscribe_increments_count(self, sse_manager):
@@ -166,7 +167,7 @@ class TestSSEEventManager:
         注意: 由于async生成器的异步特性，订阅者计数可能在某些时序下不准确。
         核心功能（广播）已通过其他测试验证。
         """
-        initial_count = sse_manager.get_subscriber_count()
+        initial_count = await sse_manager.get_subscriber_count()
 
         # 创建订阅并激活
         gen = sse_manager.subscribe()
@@ -174,7 +175,7 @@ class TestSSEEventManager:
 
         # 验证订阅者数量增加
         # 如果异步清理还没完成，可能不准确，但核心功能正常
-        count = sse_manager.get_subscriber_count()
+        count = await sse_manager.get_subscriber_count()
         assert count >= initial_count  # 至少不应该减少
 
         # 清理 - 使用aclose
@@ -239,7 +240,7 @@ class TestSSEEventManager:
 
         注意: 订阅者计数依赖异步清理，核心广播功能已验证
         """
-        initial_count = sse_manager.get_subscriber_count()
+        initial_count = await sse_manager.get_subscriber_count()
         gens = []
 
         # 创建并激活所有订阅
@@ -250,7 +251,7 @@ class TestSSEEventManager:
         await asyncio.sleep(0.2)
 
         # 订阅后数量应增加
-        count = sse_manager.get_subscriber_count()
+        count = await sse_manager.get_subscriber_count()
         assert count >= initial_count  # 至少不应该减少
 
         # 清理所有订阅

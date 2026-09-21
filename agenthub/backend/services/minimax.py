@@ -10,14 +10,17 @@ class MiniMaxService:
     """MiniMax API 服务封装 - 带重试和超时"""
 
     DEFAULT_MODEL = "MiniMax-Text-01"
+    DEFAULT_BASE_URL = "https://api.minimax.chat/v1"
 
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
         self.api_key = api_key or os.getenv("MINIMAX_API_KEY", "")
+        # base_url / model 均可通过环境变量覆盖（支持指向任意 OpenAI 兼容端点）
+        base_url = os.getenv("MINIMAX_BASE_URL") or self.DEFAULT_BASE_URL
         self.client = OpenAI(
-            api_key=self.api_key,
-            base_url="https://api.minimax.chat/v1",
+            api_key=self.api_key or "not-configured",
+            base_url=base_url,
         )
-        self.model = model or self.DEFAULT_MODEL
+        self.model = model or os.getenv("MINIMAX_MODEL") or self.DEFAULT_MODEL
         self.default_timeout = 60  # 秒
 
     @classmethod

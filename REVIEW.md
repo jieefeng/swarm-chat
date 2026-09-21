@@ -24,7 +24,7 @@ findings:
   warning: 6
   info: 3
   total: 14
-status: issues_found
+status: resolved
 ---
 
 # Phase: AgentHub Frontend Migration Code Review
@@ -32,7 +32,7 @@ status: issues_found
 **Reviewed:** 2026-05-25
 **Depth:** standard
 **Files Reviewed:** 15
-**Status:** issues_found
+**Status:** resolved (2026-05-25 复核：CR-01~05 与 WR-01~06 均已在代码中修复并验证 — 环境变量 API Key、AbortController + aborted 检查、rehype-sanitize、upsertMessage、fetchJSON 错误处理)
 
 ## Summary
 

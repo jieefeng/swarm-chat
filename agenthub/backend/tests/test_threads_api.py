@@ -198,12 +198,12 @@ class TestThreadsAPI:
         )
         assert response.status_code == 200
 
-        # 消息也应被删除（会话已不存在，返回 405）
+        # 消息也应被删除（会话已不存在，路由返回 404）
         response = client.get(
             f"/api/threads/{thread['id']}/messages",
             headers=HEADERS,
         )
-        assert response.status_code == 405
+        assert response.status_code == 404
 
     def test_delete_all_threads_except_keep(self):
         """DELETE /api/threads?keep=<id> 删除除指定会话外的所有会话"""

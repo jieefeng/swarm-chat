@@ -1,6 +1,6 @@
-"""LLM 配置数据库模块测试"""
+"""LLM 配置数据库模块测试（异步版，匹配连接注入式 LLMConfigDB）"""
 import pytest
-import sqlite3
+import aiosqlite
 import sys
 import os
 
@@ -9,46 +9,62 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from services.llm_config_db import LLMConfigDB
 
 
+@pytest.fixture
+def db_path(tmp_path):
+    """临时数据库文件路径"""
+    return str(tmp_path / "test.db")
+
+
 class TestLLMConfigDB:
     """LLMConfigDB 测试类"""
 
-    @pytest.fixture
-    def db(self, tmp_path):
-        """创建临时数据库实例"""
-        db_path = str(tmp_path / "test.db")
-        return LLMConfigDB(db_path)
-
-    def test_init_creates_table(self, db):
+    async def test_init_creates_table(self, db_path):
         """初始化时创建表"""
-        conn = sqlite3.connect(db.db_path)
-        cursor = conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='agent_llm_config'"
-        )
-        assert cursor.fetchone() is not None
-        conn.close()
+        async with aiosqlite.connect(db_path) as conn:
+            db = LLMConfigDB(conn)
+            await db.ensure_schema()
+            cursor = await conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='agent_llm_config'"
+            )
+            assert await cursor.fetchone() is not None
 
-    def test_init_seeds_default_data(self, db):
+    async def test_init_seeds_default_data(self, db_path):
         """表为空时插入默认配置"""
-        config = db.get_all_config()
-        assert "designer" in config
-        assert "developer" in config
-        assert config["designer"]["llm_provider"] == "bailian"
+        async with aiosqlite.connect(db_path) as conn:
+            db = LLMConfigDB(conn)
+            await db.ensure_schema()
+            config = await db.get_all_config()
+            assert "designer" in config
+            assert "developer" in config
+            assert config["designer"]["llm_provider"] == "bailian"
 
-    def test_get_provider_returns_default(self, db):
+    async def test_get_provider_returns_default(self, db_path):
         """获取存在的 agent provider"""
-        assert db.get_provider("designer") == "bailian"
+        async with aiosqlite.connect(db_path) as conn:
+            db = LLMConfigDB(conn)
+            await db.ensure_schema()
+            assert await db.get_provider("designer") == "bailian"
 
-    def test_get_provider_returns_none_for_unknown(self, db):
+    async def test_get_provider_returns_none_for_unknown(self, db_path):
         """获取不存在的 agent 返回 None"""
-        assert db.get_provider("unknown") is None
+        async with aiosqlite.connect(db_path) as conn:
+            db = LLMConfigDB(conn)
+            await db.ensure_schema()
+            assert await db.get_provider("unknown") is None
 
-    def test_update_provider(self, db):
+    async def test_update_provider(self, db_path):
         """更新 provider"""
-        db.update_provider("designer", "anthropic")
-        assert db.get_provider("designer") == "anthropic"
+        async with aiosqlite.connect(db_path) as conn:
+            db = LLMConfigDB(conn)
+            await db.ensure_schema()
+            await db.update_provider("designer", "minimax")
+            assert await db.get_provider("designer") == "minimax"
 
-    def test_get_all_config(self, db):
+    async def test_get_all_config(self, db_path):
         """获取所有配置"""
-        config = db.get_all_config()
-        assert isinstance(config, dict)
-        assert len(config) >= 2  # designer, developer
+        async with aiosqlite.connect(db_path) as conn:
+            db = LLMConfigDB(conn)
+            await db.ensure_schema()
+            config = await db.get_all_config()
+            assert isinstance(config, dict)
+            assert len(config) >= 2  # designer, developer

@@ -26,11 +26,11 @@ class TestMessageRouter:
         assert result["is_broadcast"] is False
         assert result["is_termination"] is False
 
-    # UT-R002: 解析@玄冥指令 -> target="玄冥", content="请分析"
+    # UT-R002: 解析@啸风指令 -> target="啸风", content="请分析"
     def test_parse_architect_directive(self, router):
-        """UT-R002: 解析@玄冥指令，目标为玄冥（架构师），内容正确提取"""
-        result = router.parse("@玄冥 请分析")
-        assert result["target"] == "玄冥"
+        """UT-R002: 解析@啸风指令，目标为啸风（开发者），内容正确提取"""
+        result = router.parse("@啸风 请分析")
+        assert result["target"] == "啸风"
         assert result["content"] == "请分析"
         assert result["is_broadcast"] is False
         assert result["is_termination"] is False
@@ -105,6 +105,6 @@ class TestMessageRouter:
 
     def test_last_parse_result_saved(self, router):
         """测试最后解析结果被保存"""
-        router.parse("@玄冥 分析需求")
+        router.parse("@啸风 分析需求")
         assert router.last_parse_result is not None
-        assert router.last_parse_result["target"] == "玄冥"
+        assert router.last_parse_result["target"] == "啸风"

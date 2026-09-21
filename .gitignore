@@ -24,6 +24,15 @@ node_modules/
 .ruff_cache/
 *.stackdump
 
+# 本地依赖与临时输出（沙箱内运行测试用）
+.pylibs/
+.tmp/
+pytest-out.txt
+pip-out.txt
+vitest-out.txt
+junit.xml
+piplist.txt
+
 # Local env
 .env.local
 
@@ -35,3 +44,6 @@ node_modules/
 # OS
 .DS_Store
 Thumbs.db
+
+# Python ���⻷��
+venv-agenthub/

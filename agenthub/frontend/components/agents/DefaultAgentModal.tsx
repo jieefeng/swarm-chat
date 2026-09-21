@@ -144,7 +144,12 @@ function AvatarFallback({
   const char = beast || agentId[0]?.toUpperCase() || "?";
 
   return (
-    <svg viewBox="0 0 128 128" className="w-full h-full">
+    <svg
+      viewBox="0 0 128 128"
+      className="w-full h-full"
+      role="img"
+      aria-label={`${beast || agentId} 头像`}
+    >
       <defs>
         <radialGradient id={`grad-${agentId}`} cx="50%" cy="50%" r="50%">
           <stop offset="0%" stopColor={color} stopOpacity="0.8" />

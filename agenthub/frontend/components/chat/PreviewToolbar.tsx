@@ -34,6 +34,7 @@ export function PreviewToolbar({
         >
           <svg
             className={`w-4 h-4 transition-transform ${isCollapsed ? "-rotate-90" : ""}`}
+            aria-hidden="true"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -54,6 +55,7 @@ export function PreviewToolbar({
         >
           <svg
             className="w-4 h-4"
+            aria-hidden="true"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -74,6 +76,7 @@ export function PreviewToolbar({
         >
           <svg
             className="w-4 h-4"
+            aria-hidden="true"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -95,6 +98,7 @@ export function PreviewToolbar({
           >
             <svg
               className="w-4 h-4"
+              aria-hidden="true"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"

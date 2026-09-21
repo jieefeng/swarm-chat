@@ -76,9 +76,11 @@ export function AgentConfigModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* 遮罩层 */}
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+      {/* 遮罩层（点击关闭） */}
+      <button
+        type="button"
+        aria-label="关闭配置窗口"
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm cursor-default"
         onClick={onClose}
       />
 
@@ -95,6 +97,7 @@ export function AgentConfigModal({
           >
             <svg
               className="w-5 h-5"
+              aria-hidden="true"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -115,10 +118,14 @@ export function AgentConfigModal({
           <>
             {/* 平台选择 */}
             <div className="mb-4">
-              <label className="block text-xs font-body font-medium text-ink/50 mb-1.5 tracking-wide">
+              <label
+                htmlFor="agent-config-provider"
+                className="block text-xs font-body font-medium text-ink/50 mb-1.5 tracking-wide"
+              >
                 平台
               </label>
               <select
+                id="agent-config-provider"
                 value={providerInput}
                 onChange={(e) => setProviderInput(e.target.value)}
                 className="w-full px-3 py-2 bg-white border border-ink/[0.1] rounded-lg text-sm text-ink focus:outline-none focus:border-gold/40 transition-colors font-body"
@@ -133,10 +140,14 @@ export function AgentConfigModal({
 
             {/* 模型输入框 */}
             <div className="mb-5">
-              <label className="block text-xs font-body font-medium text-ink/50 mb-1.5 tracking-wide">
+              <label
+                htmlFor="agent-config-model"
+                className="block text-xs font-body font-medium text-ink/50 mb-1.5 tracking-wide"
+              >
                 模型名称
               </label>
               <input
+                id="agent-config-model"
                 type="text"
                 value={modelInput}
                 onChange={(e) => setModelInput(e.target.value)}

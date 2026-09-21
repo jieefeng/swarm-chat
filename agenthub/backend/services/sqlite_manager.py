@@ -211,13 +211,17 @@ class SQLiteManager:
 
     async def add_message(
         self,
-        thread_id: str,
-        role: str,
-        content: str,
+        thread_id: str = "default",
+        role: str = "",
+        content: str = "",
         agent_id: Optional[str] = None,
         sender_name: Optional[str] = None,
+        user_id: Optional[str] = None,
     ) -> str:
-        """Add message to thread and return message ID."""
+        """Add message to thread and return message ID.
+
+        user_id 仅为与 MemoryManager 接口兼容（thread 已按用户隔离），此处忽略。
+        """
         async def _op():
             db = _require_db(self._db)
             msg_id = _generate_id("msg")
@@ -230,8 +234,32 @@ class SQLiteManager:
             return msg_id
         return await self._run_with_retry(_op)
 
-    async def get_messages(self, thread_id: str, limit: int = 100) -> list[dict]:
-        """Get messages for a thread in chronological order."""
+    async def get_context_for_agent(
+        self,
+        agent_id: str,
+        user_id: str = "default",
+        limit: int = 10,
+        thread_id: str = "default",
+    ) -> str:
+        """获取指定 Agent 的上下文文本（与 MemoryManager 接口一致）。"""
+        recent = await self.get_messages(thread_id=thread_id, limit=limit)
+        context_parts = []
+        for msg in recent:
+            role = msg.get("role", "unknown")
+            content = (msg.get("content") or "")[:200]
+            context_parts.append(f"[{role}]: {content}")
+        return "\n".join(context_parts)
+
+    async def get_messages(
+        self,
+        thread_id: str = "default",
+        limit: int = 100,
+        user_id: Optional[str] = None,
+    ) -> list[dict]:
+        """Get messages for a thread in chronological order.
+
+        user_id 仅为与 MemoryManager 接口兼容（thread 已按用户隔离），此处忽略。
+        """
         db = _require_db(self._db)
         cursor = await db.execute(
             "SELECT * FROM messages WHERE thread_id = ? ORDER BY created_at DESC, ROWID DESC LIMIT ?",

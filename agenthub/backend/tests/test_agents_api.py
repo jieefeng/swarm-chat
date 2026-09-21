@@ -31,11 +31,17 @@ class TestAgentsLLMConfigAPI:
         response = client.put(
             "/api/agents/designer/llm-config",
             headers=HEADERS,
-            json={"llm_provider": "anthropic"}
+            json={"llm_provider": "minimax"}
         )
         assert response.status_code == 200
         data = response.json()
-        assert data["llm_provider"] == "anthropic"
+        assert data["llm_provider"] == "minimax"
+        # 还原默认配置，避免影响其他测试
+        client.put(
+            "/api/agents/designer/llm-config",
+            headers=HEADERS,
+            json={"llm_provider": "bailian"}
+        )
 
     def test_update_invalid_provider(self):
         """PUT 无效 provider 返回 422"""

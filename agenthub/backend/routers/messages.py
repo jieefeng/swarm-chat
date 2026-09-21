@@ -47,7 +47,10 @@ async def _persist_message(
     user_id: str,
     thread_id: str,
 ) -> dict:
-    """保存消息到 memory。当 memory 不是 SQLite 单例时，额外写入 SQLite。"""
+    """保存消息到 memory。当 memory 不是 SQLite 单例时，额外写入 SQLite。
+
+    返回统一的消息 dict（SQLiteManager.add_message 只返回 msg_id，需要包装）。
+    """
     from agenthub.backend.services.database import sqlite_manager as _sqlite_singleton
 
     msg = await memory.add_message(
@@ -61,6 +64,18 @@ async def _persist_message(
 
     # 当 memory 是 SQLite 单例时（STORAGE_BACKEND=sqlite），跳过重复写入
     if memory is _sqlite_singleton:
+        # SQLiteManager 返回 msg_id 字符串，包装成消息 dict
+        if isinstance(msg, str):
+            msg = {
+                "id": msg,
+                "thread_id": thread_id,
+                "role": role,
+                "content": content,
+                "agent_id": agent_id,
+                "sender_name": sender_name or role,
+                "timestamp": int(datetime.now().timestamp()),
+                "type": "user" if role == "user" else "agent",
+            }
         return msg
 
     # Redis 或内存模式：额外持久化到 SQLite

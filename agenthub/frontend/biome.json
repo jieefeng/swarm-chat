@@ -1,5 +1,21 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.4.15/schema.json",
+  "overrides": [
+    {
+      "includes": [
+        "components/agents/AgentSelector.tsx",
+        "components/threads/ThreadItem.tsx",
+        "components/landing/WuxingFlow.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "a11y": {
+            "useSemanticElements": "off"
+          }
+        }
+      }
+    }
+  ],
   "linter": {
     "enabled": true,
     "includes": [

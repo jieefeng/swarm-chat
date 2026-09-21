@@ -13,15 +13,27 @@ logging.basicConfig(
 )
 
 # Windows 环境下设置 UTF-8 编码，避免 GBK 编码错误
+# 仅在编码确实不是 UTF-8 时才替换，且不关闭底层流：
+# 无条件替换会破坏 pytest 等工具对 stdout/stderr 的捕获
 if sys.platform == "win32":
     import io
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+    for _name in ("stdout", "stderr"):
+        _stream = getattr(sys, _name)
+        if _stream is not None and (_stream.encoding or "").lower().replace("-", "") != "utf8":
+            setattr(sys, _name, io.TextIOWrapper(
+                _stream.buffer, encoding="utf-8", errors="replace", line_buffering=_stream.line_buffering,
+            ))
 
 # 允许直接运行和模块导入两种方式
 _current_dir = Path(__file__).parent.resolve()
 _root_dir = _current_dir.parent.parent
 sys.path.insert(0, str(_root_dir))
+
+# 加载 backend/.env —— 必须在导入任何 service 之前，
+# 因为部分模块在 import 时就会读取环境变量（如 LLM base_url / API key）
+from dotenv import load_dotenv
+
+load_dotenv(_current_dir / ".env")
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -51,6 +63,8 @@ async def lifespan(app: FastAPI):
     yield
 
     # 关闭时清理
+    from agenthub.backend.services.database import close_db
+    await close_db()
     executor.shutdown(wait=False)
     print("[LIFESPAN] Thread pool shutdown")
 

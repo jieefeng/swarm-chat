@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from agenthub.backend.services.database import get_db
+from agenthub.backend.services.database import get_db, sqlite_manager  # noqa: F401 (sqlite_manager 供测试复用)
 
 logger = logging.getLogger(__name__)
 

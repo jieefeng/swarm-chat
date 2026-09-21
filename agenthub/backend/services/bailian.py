@@ -11,14 +11,19 @@ class BailianService:
     """百炼 API 服务封装 - 带重试和超时"""
 
     DEFAULT_MODEL = "qwen3.7-max-preview"
+    DEFAULT_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
         self.api_key = api_key or os.getenv("DASHSCOPE_API_KEY", "")
+        # base_url / model 均可通过环境变量覆盖（支持指向任意 OpenAI 兼容端点）
+        base_url = os.getenv("DASHSCOPE_BASE_URL") or self.DEFAULT_BASE_URL
+        # 缺少密钥时使用占位符：避免模块导入/测试环境因 OpenAI 客户端
+        # 校验直接崩溃，实际调用时会返回认证错误
         self.client = OpenAI(
-            api_key=self.api_key,
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+            api_key=self.api_key or "not-configured",
+            base_url=base_url,
         )
-        self.model = model or self.DEFAULT_MODEL
+        self.model = model or os.getenv("DASHSCOPE_MODEL") or self.DEFAULT_MODEL
         self.default_timeout = 60  # 秒
 
     @classmethod

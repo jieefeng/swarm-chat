@@ -52,7 +52,6 @@ export function WuxingFlow() {
           >
             {/* 相生箭头（5 条曲线） */}
             {flowSteps.map((step, i) => {
-              const next = flowSteps[(i + 1) % flowSteps.length]!;
               const p1 = nodePosition(i, flowSteps.length);
               const p2 = nodePosition(
                 (i + 1) % flowSteps.length,
