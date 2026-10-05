@@ -1,4 +1,4 @@
-# Python
+# Python（虚拟环境 venv-agenthub/ 等由 venv-*/ 覆盖）
 venv/
 venv-*/
 __pycache__/
@@ -44,6 +44,3 @@ piplist.txt
 # OS
 .DS_Store
 Thumbs.db
-
-# Python ���⻷��
-venv-agenthub/
