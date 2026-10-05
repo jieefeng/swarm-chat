@@ -1,4 +1,4 @@
-"""LLM 适配器选择器 - 根据配置选择百炼或 MiniMax"""
+"""LLM 适配器选择器 - 根据配置选择百炼或 MiniMax（均为模拟实现，无真实 API 调用）"""
 import os
 from typing import Optional, Union
 

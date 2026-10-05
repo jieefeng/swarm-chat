@@ -13,3 +13,29 @@ sys.path.insert(
         os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     ),
 )
+
+# 跳过 mock LLM 的流式打字机延迟（每 chunk 一次阻塞 sleep，会拖慢且卡住事件循环）
+os.environ.setdefault("MOCK_LLM_STREAM_DELAY", "0")
+
+import asyncio
+
+import pytest
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _close_shared_sqlite():
+    """会话结束后关闭全局 SQLiteManager 单例连接。
+
+    测试里 TestClient 不用 `with`（lifespan 不运行，close_db 不会触发），
+    且各测试用 `asyncio.run` 在临时事件循环里调用 init_db。aiosqlite 的
+    连接工作线程是非 daemon 线程，连接不关进程就永远退不出去——表现为
+    "202 passed" 打印完 pytest 仍然挂死。
+    """
+    yield
+    from agenthub.backend.services.database import sqlite_manager
+
+    if sqlite_manager._db is not None:
+        try:
+            asyncio.run(sqlite_manager.close())
+        except Exception:
+            pass

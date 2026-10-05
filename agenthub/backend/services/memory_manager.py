@@ -168,7 +168,7 @@ def create_memory_manager():
         ttl_days = int(os.getenv("MESSAGE_TTL_DAYS", "30"))
         try:
             import redis as sync_redis
-            client = sync_redis.from_url(redis_url, protocol=2)
+            client = sync_redis.from_url(redis_url, protocol=2, socket_connect_timeout=3)
             client.ping()
             client.close()
             manager = RedisMemoryManager(

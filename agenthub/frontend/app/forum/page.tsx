@@ -35,7 +35,8 @@ const SetDefaultConfirmToast = dynamic(
   { ssr: false },
 );
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:7005";
+// 与 lib/api.ts 保持同源策略：空值走 next.config.mjs 代理转发到后端，避免写死端口
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
 export default function HomePage() {
   const [activeAgentId, setActiveAgentId] = useState<string | null>(null);

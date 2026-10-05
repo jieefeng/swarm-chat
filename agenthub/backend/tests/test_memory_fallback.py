@@ -16,7 +16,8 @@ class TestMemoryFallback:
         from agenthub.backend.services.memory_manager import create_memory_manager
         with patch.dict(os.environ, {
             "STORAGE_BACKEND": "redis",
-            "REDIS_URL": "redis://invalid-host:6379"
+            # 本机必无监听的端口：立即得到 connection refused，不依赖 DNS（invalid-host 解析耗时不稳定）
+            "REDIS_URL": "redis://127.0.0.1:1"
         }):
             manager = create_memory_manager()
             # 应该降级为 SQLiteManager

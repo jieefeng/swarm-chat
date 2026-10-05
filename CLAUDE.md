@@ -41,7 +41,7 @@ agenthub/
 ```bash
 # 后端
 cd agenthub/backend && pip install -r requirements.txt -r requirements-dev.txt && cp .env.example .env
-python main.py    # 需要先填 ANTHROPIC_API_KEY 或 DASHSCOPE_API_KEY
+python main.py    # 无需任何 LLM API Key（LLM 调用已全部改为模拟实现）
 
 # 前端
 cd agenthub/frontend && npm install && npm run dev
@@ -119,15 +119,18 @@ Zustand store 更新后组件自动响应，无需手动订阅。
 ## 环境变量
 
 ```bash
-# backend/.env（从 .env.example 复制后修改）
-ANTHROPIC_API_KEY=sk-...   # Claude API 密钥（LLM_PROVIDER=anthropic 时必填）
-DASHSCOPE_API_KEY=sk-...   # 百炼 API 密钥（LLM_PROVIDER=bailian 时必填）
+# backend/.env（从 .env.example 复制即可，无需修改）
+LLM_PROVIDER=bailian       # LLM 提供商，可选 bailian/minimax（均指向模拟服务）
 API_KEY=dev-secret-key     # API 认证密钥
 PORT=7010                  # 服务端口，必须设为 7010（与前端代理一致）
-LLM_PROVIDER=bailian       # LLM 提供商，可选 bailian/anthropic
+
+# frontend/.env.local（不被 git 跟踪，换机器/新 clone 必须手动创建）
+NEXT_PUBLIC_API_KEY=dev-secret-key   # 必须与 backend/.env 的 API_KEY 一致，否则所有 /api 请求 401
+# NEXT_PUBLIC_API_URL 不设置：走同源 + next.config.mjs 代理
 ```
 
-注意：`.env.example` 只列了 `ANTHROPIC_API_KEY` 和 `API_KEY`，使用百炼时需手动添加 `DASHSCOPE_API_KEY` 和 `LLM_PROVIDER=bailian`。
+注意：所有 LLM 调用均为本地模拟（`backend/services/mock_llm.py`，bailian/minimax/claude 三个服务都是其别名），不发起真实网络请求，不读取/使用任何 LLM API Key。
+注意：后端一旦在 `backend/.env` 设置 `API_KEY`，前端必须同步创建 `frontend/.env.local` 配 `NEXT_PUBLIC_API_KEY`（NEXT_PUBLIC_* 在 dev server 启动时内联进客户端 bundle，改完必须重启 dev server），否则议事堂等页面 API 全 401——症状是页面能打开但无神兽、无会话、发消息失败。
 
 ## ECC Skills（推荐使用）
 

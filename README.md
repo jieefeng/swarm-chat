@@ -45,19 +45,19 @@ Swarm-Chat 是一个 IM 聊天式的多 Agent 协作平台，用户通过自然�
 ```bash
 cd agenthub/backend
 pip install -r requirements.txt
-cp .env.example .env   # 编辑填入 API Key
+cp .env.example .env   # 无需任何 LLM API Key（LLM 调用已全部改为模拟实现）
 python main.py
 ```
 
 环境变量 (.env):
 
 ```
-LLM_PROVIDER=bailian         # 或 anthropic
-DASHSCOPE_API_KEY=sk-...     # 百炼 API
-ANTHROPIC_API_KEY=sk-...     # Claude API
+LLM_PROVIDER=bailian         # bailian / minimax（均指向模拟服务）
 API_KEY=dev-secret-key       # API 认证密钥
 PORT=7010                    # 必须 7010（与前端代理一致）
 ```
+
+> 说明：所有 LLM 调用均为本地模拟（`services/mock_llm.py`），不发起真实网络请求，不使用任何 API Key。
 
 ### 前端
 

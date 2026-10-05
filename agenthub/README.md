@@ -39,7 +39,7 @@
 ```bash
 cd backend
 pip install -r requirements.txt
-cp .env.example .env  # 填入 ANTHROPIC_API_KEY 或 DASHSCOPE_API_KEY
+cp .env.example .env  # 无需任何 LLM API Key（LLM 调用已全部改为模拟实现）
 python main.py
 ```
 

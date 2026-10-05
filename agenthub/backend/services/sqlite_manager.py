@@ -51,6 +51,12 @@ class SQLiteManager:
 
     async def init_db(self) -> None:
         """Initialize database connection and create tables."""
+        # aiosqlite 工作线程是非 daemon 线程，旧连接不 close 会卡住进程退出
+        if self._db is not None:
+            try:
+                await self._db.close()
+            except Exception:
+                pass
         self._db = await aiosqlite.connect(self.db_path)
         self._db.row_factory = aiosqlite.Row
         await self._db.execute("PRAGMA journal_mode=WAL")
