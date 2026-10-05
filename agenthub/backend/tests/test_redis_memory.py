@@ -6,6 +6,7 @@ import json
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import fakeredis
 import fakeredis.aioredis
 from agenthub.backend.services.memory_manager import RedisMemoryManager
 
@@ -13,7 +14,7 @@ from agenthub.backend.services.memory_manager import RedisMemoryManager
 @pytest.fixture
 async def redis_memory():
     """创建使用 fakeredis 的 RedisMemoryManager 实例"""
-    fake_server = fakeredis.aioredis.FakeServer()
+    fake_server = fakeredis.FakeServer()
     client = fakeredis.aioredis.FakeRedis(server=fake_server, decode_responses=True)
     manager = RedisMemoryManager.__new__(RedisMemoryManager)
     manager.redis = client

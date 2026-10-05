@@ -40,7 +40,7 @@ agenthub/
 
 ```bash
 # 后端
-cd agenthub/backend && pip install -r requirements.txt && cp .env.example .env
+cd agenthub/backend && pip install -r requirements.txt -r requirements-dev.txt && cp .env.example .env
 python main.py    # 需要先填 ANTHROPIC_API_KEY 或 DASHSCOPE_API_KEY
 
 # 前端
